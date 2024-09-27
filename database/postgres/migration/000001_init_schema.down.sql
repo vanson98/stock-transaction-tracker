@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS transactions;
+DROP TABLE IF EXISTS entries;
+DROP TABLE IF EXISTS investments;
+DROP TABLE IF EXISTS accounts;
