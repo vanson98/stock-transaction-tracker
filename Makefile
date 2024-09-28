@@ -9,7 +9,7 @@ dropdb:
 migrateup:
 	migrate -path database/postgres/migration --database "postgresql://root:123456@localhost:5432/stock_tracker?sslmode=disable" --verbose up
 migratedown:
-	migrate -path database/postgres/migration --database "postgresql://root:123456@localhost:5432/stock_tracker?sslmode=disable" --verbose down
+	migrate -path database/postgres/migration --database "postgresql://root:123456@localhost:5432/stock_tracker?sslmode=disable" --verbose down 1
 sqlc: 
 	sqlc generate
 .PHONY: sqlc runapp postgres createdb dropdb migrateup migratedown

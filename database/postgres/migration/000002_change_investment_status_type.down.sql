@@ -1,0 +1,6 @@
+ALTER TABLE investments
+ALTER COLUMN status TYPE VARCHAR USING status::VARCHAR,
+ALTER COLUMN status DROP NOT NULL,
+ALTER COLUMN status DROP DEFAULT;
+
+DROP TYPE investment_status;

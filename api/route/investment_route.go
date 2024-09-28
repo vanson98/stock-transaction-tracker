@@ -4,7 +4,6 @@ import (
 	"stt/api/controller"
 	"stt/bootstrap"
 	db "stt/database/postgres/sqlc"
-	"stt/repositories"
 	"stt/services"
 	"time"
 
@@ -12,9 +11,8 @@ import (
 )
 
 func NewInvestmentRouter(env *bootstrap.Env, timeout time.Duration, queries *db.Queries, group *gin.RouterGroup) {
-	ir := repositories.InitInvestmentRepository(queries)
 	ic := controller.InvestmentController{
-		InvestmentService: services.InitInvestmentService(ir, timeout),
+		InvestmentService: services.InitInvestmentService(queries, timeout),
 	}
 
 	group.GET("/investments", ic.GetAll)

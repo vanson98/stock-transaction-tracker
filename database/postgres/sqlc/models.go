@@ -5,8 +5,54 @@
 package db
 
 import (
+	"database/sql/driver"
+	"fmt"
+
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type InvestmentStatus string
+
+const (
+	InvestmentStatusInactive InvestmentStatus = "inactive"
+	InvestmentStatusActive   InvestmentStatus = "active"
+	InvestmentStatusBuyout   InvestmentStatus = "buyout"
+)
+
+func (e *InvestmentStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = InvestmentStatus(s)
+	case string:
+		*e = InvestmentStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for InvestmentStatus: %T", src)
+	}
+	return nil
+}
+
+type NullInvestmentStatus struct {
+	InvestmentStatus InvestmentStatus `json:"investment_status"`
+	Valid            bool             `json:"valid"` // Valid is true if InvestmentStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullInvestmentStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.InvestmentStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.InvestmentStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullInvestmentStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.InvestmentStatus), nil
+}
 
 type Account struct {
 	ID          int64              `json:"id"`
@@ -28,19 +74,19 @@ type Entry struct {
 }
 
 type Investment struct {
-	ID              int64          `json:"id"`
-	AccountID       pgtype.Int8    `json:"account_id"`
-	StockCode       string         `json:"stock_code"`
-	CompanyName     pgtype.Text    `json:"company_name"`
-	TotalBuyAmount  int32          `json:"total_buy_amount"`
-	TotalMoneyBuy   pgtype.Numeric `json:"total_money_buy"`
-	CapitalCost     pgtype.Numeric `json:"capital_cost"`
-	MarketPrice     pgtype.Numeric `json:"market_price"`
-	TotalSellAmount int32          `json:"total_sell_amount"`
-	TotalMoneySell  pgtype.Numeric `json:"total_money_sell"`
-	CurrentVolume   int32          `json:"current_volume"`
-	Description     pgtype.Text    `json:"description"`
-	Status          pgtype.Text    `json:"status"`
+	ID              int64            `json:"id"`
+	AccountID       pgtype.Int8      `json:"account_id"`
+	StockCode       string           `json:"stock_code"`
+	CompanyName     pgtype.Text      `json:"company_name"`
+	TotalBuyAmount  int32            `json:"total_buy_amount"`
+	TotalMoneyBuy   pgtype.Numeric   `json:"total_money_buy"`
+	CapitalCost     pgtype.Numeric   `json:"capital_cost"`
+	MarketPrice     pgtype.Numeric   `json:"market_price"`
+	TotalSellAmount int32            `json:"total_sell_amount"`
+	TotalMoneySell  pgtype.Numeric   `json:"total_money_sell"`
+	CurrentVolume   int32            `json:"current_volume"`
+	Description     pgtype.Text      `json:"description"`
+	Status          InvestmentStatus `json:"status"`
 }
 
 type Transaction struct {

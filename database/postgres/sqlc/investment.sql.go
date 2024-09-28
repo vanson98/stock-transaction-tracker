@@ -18,17 +18,17 @@ RETURNING id, account_id, stock_code, company_name, total_buy_amount, total_mone
 `
 
 type CreateInvestmentParams struct {
-	AccountID       pgtype.Int8    `json:"account_id"`
-	StockCode       string         `json:"stock_code"`
-	CompanyName     pgtype.Text    `json:"company_name"`
-	TotalMoneyBuy   pgtype.Numeric `json:"total_money_buy"`
-	CapitalCost     pgtype.Numeric `json:"capital_cost"`
-	MarketPrice     pgtype.Numeric `json:"market_price"`
-	TotalSellAmount int32          `json:"total_sell_amount"`
-	TotalMoneySell  pgtype.Numeric `json:"total_money_sell"`
-	CurrentVolume   int32          `json:"current_volume"`
-	Description     pgtype.Text    `json:"description"`
-	Status          pgtype.Text    `json:"status"`
+	AccountID       pgtype.Int8      `json:"account_id"`
+	StockCode       string           `json:"stock_code"`
+	CompanyName     pgtype.Text      `json:"company_name"`
+	TotalMoneyBuy   pgtype.Numeric   `json:"total_money_buy"`
+	CapitalCost     pgtype.Numeric   `json:"capital_cost"`
+	MarketPrice     pgtype.Numeric   `json:"market_price"`
+	TotalSellAmount int32            `json:"total_sell_amount"`
+	TotalMoneySell  pgtype.Numeric   `json:"total_money_sell"`
+	CurrentVolume   int32            `json:"current_volume"`
+	Description     pgtype.Text      `json:"description"`
+	Status          InvestmentStatus `json:"status"`
 }
 
 func (q *Queries) CreateInvestment(ctx context.Context, arg CreateInvestmentParams) (Investment, error) {

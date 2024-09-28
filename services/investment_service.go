@@ -8,14 +8,14 @@ import (
 )
 
 type investmentService struct {
-	investmentRepository domain.IInvestmentRepository
-	contextTimeout       time.Duration
+	queries        *db.Queries
+	contextTimeout time.Duration
 }
 
-func InitInvestmentService(investmentRepo domain.IInvestmentRepository, timeout time.Duration) domain.IInvestmentService {
+func InitInvestmentService(q *db.Queries, timeout time.Duration) domain.IInvestmentService {
 	return investmentService{
-		investmentRepository: investmentRepo,
-		contextTimeout:       timeout,
+		queries:        q,
+		contextTimeout: timeout,
 	}
 }
 
@@ -23,7 +23,7 @@ func InitInvestmentService(investmentRepo domain.IInvestmentRepository, timeout 
 func (ivs investmentService) Create(c context.Context, param db.CreateInvestmentParams) (db.Investment, error) {
 	ctx, cancel := context.WithTimeout(c, ivs.contextTimeout)
 	defer cancel()
-	return ivs.investmentRepository.Create(ctx, param)
+	return ivs.queries.CreateInvestment(ctx, param)
 }
 
 // Delete implements domain.IInvestmentService.
@@ -33,7 +33,7 @@ func (i investmentService) Delete(c context.Context, id int32) {
 
 // GetAll implements domain.IInvestmentService.
 func (i investmentService) GetAll(c context.Context) {
-	i.investmentRepository.GetAll(c)
+	panic("unimplemented")
 }
 
 // GetById implements domain.IInvestmentService.
