@@ -7,7 +7,47 @@ package db
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const createAccount = `-- name: CreateAccount :one
+insert into accounts(channel_name,"owner",balance,buy_fee,sell_free,currency)
+VALUES($1,$2,$3,$4,$5,$6)
+RETURNING id, channel_name, owner, balance, buy_fee, sell_free, currency, created_at
+`
+
+type CreateAccountParams struct {
+	ChannelName string         `json:"channel_name"`
+	Owner       string         `json:"owner"`
+	Balance     pgtype.Numeric `json:"balance"`
+	BuyFee      pgtype.Numeric `json:"buy_fee"`
+	SellFree    pgtype.Numeric `json:"sell_free"`
+	Currency    string         `json:"currency"`
+}
+
+func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (Account, error) {
+	row := q.db.QueryRow(ctx, createAccount,
+		arg.ChannelName,
+		arg.Owner,
+		arg.Balance,
+		arg.BuyFee,
+		arg.SellFree,
+		arg.Currency,
+	)
+	var i Account
+	err := row.Scan(
+		&i.ID,
+		&i.ChannelName,
+		&i.Owner,
+		&i.Balance,
+		&i.BuyFee,
+		&i.SellFree,
+		&i.Currency,
+		&i.CreatedAt,
+	)
+	return i, err
+}
 
 const listAccounts = `-- name: ListAccounts :many
 select id, channel_name, owner, balance, buy_fee, sell_free, currency, created_at from accounts
@@ -41,4 +81,20 @@ func (q *Queries) ListAccounts(ctx context.Context) ([]Account, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateAccount = `-- name: UpdateAccount :exec
+UPDATE accounts
+SET channel_name = $1
+WHERE id = $2
+`
+
+type UpdateAccountParams struct {
+	ChannelName string `json:"channel_name"`
+	ID          int64  `json:"id"`
+}
+
+func (q *Queries) UpdateAccount(ctx context.Context, arg UpdateAccountParams) error {
+	_, err := q.db.Exec(ctx, updateAccount, arg.ChannelName, arg.ID)
+	return err
 }
