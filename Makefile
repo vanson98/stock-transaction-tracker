@@ -12,4 +12,6 @@ migratedown:
 	migrate -path database/postgres/migration --database "postgresql://root:123456@localhost:5432/stock_tracker?sslmode=disable" --verbose down 1
 sqlc: 
 	sqlc generate
+test: 
+	go test -v -cover ./database/postgres/sqlc
 .PHONY: sqlc runapp postgres createdb dropdb migrateup migratedown

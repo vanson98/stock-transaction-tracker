@@ -1,16 +1,23 @@
 -- name: CreateAccount :one
-insert into accounts(channel_name,"owner",balance,buy_fee,sell_free,currency)
+INSERT INTO accounts(channel_name,"owner",balance,buy_fee,sell_free,currency)
 VALUES($1,$2,$3,$4,$5,$6)
 RETURNING *;
 
 -- name: ListAccounts :many
-select * from accounts
-order by "owner";
+SELECT * FROM accounts
+OFFSET $1 LIMIT $2;
 
--- name: UpdateAccount :exec
+-- name: GetAccountById :one
+SELECT * FROM accounts
+WHERE id=$1;
+
+-- name: UpdateAccountBalance :one
 UPDATE accounts
-SET channel_name = $1
-WHERE id = $2;
+SET balance = $1
+WHERE id = $2
+RETURNING *;
 
 
-
+-- name: DeleteAccount :exec
+DELETE FROM accounts
+WHERE id=$1;

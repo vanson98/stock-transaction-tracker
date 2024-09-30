@@ -18,7 +18,7 @@ type Env struct {
 
 func NewEnv() *Env {
 	env := Env{}
-	viper.SetConfigFile(".env")
+	viper.SetConfigFile("/Users/vanson/Projects/stock-transaction-tracker/.env")
 	err := viper.ReadInConfig()
 	if err != nil {
 		log.Fatal("Can't find the file .env:", err)

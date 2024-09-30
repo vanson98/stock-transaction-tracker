@@ -13,11 +13,13 @@ import (
 type Querier interface {
 	CreateAccount(ctx context.Context, arg CreateAccountParams) (Account, error)
 	CreateInvestment(ctx context.Context, arg CreateInvestmentParams) (Investment, error)
+	DeleteAccount(ctx context.Context, id int64) error
+	GetAccountById(ctx context.Context, id int64) (Account, error)
 	GetAllInvestment(ctx context.Context) ([]Investment, error)
 	GetInvestmentByAccountId(ctx context.Context, accountID pgtype.Int8) ([]Investment, error)
 	GetInvestmentByCode(ctx context.Context, stockCode string) (Investment, error)
-	ListAccounts(ctx context.Context) ([]Account, error)
-	UpdateAccount(ctx context.Context, arg UpdateAccountParams) error
+	ListAccounts(ctx context.Context, arg ListAccountsParams) ([]Account, error)
+	UpdateAccountBalance(ctx context.Context, arg UpdateAccountBalanceParams) (Account, error)
 	UpdateInvestmentStatus(ctx context.Context, arg UpdateInvestmentStatusParams) error
 }
 
