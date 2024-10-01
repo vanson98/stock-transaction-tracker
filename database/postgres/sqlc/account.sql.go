@@ -12,17 +12,15 @@ import (
 )
 
 const createAccount = `-- name: CreateAccount :one
-INSERT INTO accounts(channel_name,"owner",balance,buy_fee,sell_free,currency)
-VALUES($1,$2,$3,$4,$5,$6)
-RETURNING id, channel_name, owner, balance, buy_fee, sell_free, currency, created_at
+INSERT INTO accounts(channel_name,"owner",balance,currency)
+VALUES($1,$2,$3,$4)
+RETURNING id, channel_name, owner, balance, currency, created_at
 `
 
 type CreateAccountParams struct {
 	ChannelName string         `json:"channel_name"`
 	Owner       string         `json:"owner"`
 	Balance     pgtype.Numeric `json:"balance"`
-	BuyFee      pgtype.Numeric `json:"buy_fee"`
-	SellFree    pgtype.Numeric `json:"sell_free"`
 	Currency    string         `json:"currency"`
 }
 
@@ -31,8 +29,6 @@ func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (A
 		arg.ChannelName,
 		arg.Owner,
 		arg.Balance,
-		arg.BuyFee,
-		arg.SellFree,
 		arg.Currency,
 	)
 	var i Account
@@ -41,8 +37,6 @@ func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (A
 		&i.ChannelName,
 		&i.Owner,
 		&i.Balance,
-		&i.BuyFee,
-		&i.SellFree,
 		&i.Currency,
 		&i.CreatedAt,
 	)
@@ -60,7 +54,7 @@ func (q *Queries) DeleteAccount(ctx context.Context, id int64) error {
 }
 
 const getAccountById = `-- name: GetAccountById :one
-SELECT id, channel_name, owner, balance, buy_fee, sell_free, currency, created_at FROM accounts
+SELECT id, channel_name, owner, balance, currency, created_at FROM accounts
 WHERE id=$1
 `
 
@@ -72,8 +66,6 @@ func (q *Queries) GetAccountById(ctx context.Context, id int64) (Account, error)
 		&i.ChannelName,
 		&i.Owner,
 		&i.Balance,
-		&i.BuyFee,
-		&i.SellFree,
 		&i.Currency,
 		&i.CreatedAt,
 	)
@@ -81,7 +73,7 @@ func (q *Queries) GetAccountById(ctx context.Context, id int64) (Account, error)
 }
 
 const listAccounts = `-- name: ListAccounts :many
-SELECT id, channel_name, owner, balance, buy_fee, sell_free, currency, created_at FROM accounts
+SELECT id, channel_name, owner, balance, currency, created_at FROM accounts
 OFFSET $1 LIMIT $2
 `
 
@@ -104,8 +96,6 @@ func (q *Queries) ListAccounts(ctx context.Context, arg ListAccountsParams) ([]A
 			&i.ChannelName,
 			&i.Owner,
 			&i.Balance,
-			&i.BuyFee,
-			&i.SellFree,
 			&i.Currency,
 			&i.CreatedAt,
 		); err != nil {
@@ -123,7 +113,7 @@ const updateAccountBalance = `-- name: UpdateAccountBalance :one
 UPDATE accounts
 SET balance = $1
 WHERE id = $2
-RETURNING id, channel_name, owner, balance, buy_fee, sell_free, currency, created_at
+RETURNING id, channel_name, owner, balance, currency, created_at
 `
 
 type UpdateAccountBalanceParams struct {
@@ -139,8 +129,6 @@ func (q *Queries) UpdateAccountBalance(ctx context.Context, arg UpdateAccountBal
 		&i.ChannelName,
 		&i.Owner,
 		&i.Balance,
-		&i.BuyFee,
-		&i.SellFree,
 		&i.Currency,
 		&i.CreatedAt,
 	)

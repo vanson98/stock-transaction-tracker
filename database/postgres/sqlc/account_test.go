@@ -15,8 +15,6 @@ func createRandomAccount(t *testing.T) Account {
 		ChannelName: util.RandomString(3),
 		Owner:       util.RandomOwner(),
 		Balance:     util.RandomPgNumeric(1, 1000000),
-		BuyFee:      util.RandomPgNumeric(1, 1000),
-		SellFree:    util.RandomPgNumeric(1, 1000),
 		Currency:    util.RandomCurrency(),
 	}
 	account, err := testQueries.CreateAccount(context.Background(), arg)
@@ -26,8 +24,6 @@ func createRandomAccount(t *testing.T) Account {
 	require.Equal(t, arg.ChannelName, account.ChannelName)
 	require.Equal(t, arg.Owner, account.Owner)
 	require.Equal(t, arg.Balance, account.Balance)
-	require.Equal(t, arg.BuyFee, account.BuyFee)
-	require.Equal(t, arg.SellFree, account.SellFree)
 	require.Equal(t, arg.Currency, account.Currency)
 
 	require.NotZero(t, account.ID)
@@ -68,8 +64,6 @@ func TestUpdateAccountBalance(t *testing.T) {
 
 	require.Equal(t, account1.ID, account2.ID)
 	require.Equal(t, param.Balance, account2.Balance)
-	require.Equal(t, account1.BuyFee, account2.BuyFee)
-	require.Equal(t, account1.SellFree, account2.SellFree)
 	require.Equal(t, account1.Currency, account2.Currency)
 	require.WithinDuration(t, account1.CreatedAt.Time, account2.CreatedAt.Time, time.Second)
 }

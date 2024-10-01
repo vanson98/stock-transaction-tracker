@@ -11,6 +11,48 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type EntryFromType string
+
+const (
+	EntryFromTypeTM EntryFromType = "TM"
+	EntryFromTypeIT EntryFromType = "IT"
+)
+
+func (e *EntryFromType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = EntryFromType(s)
+	case string:
+		*e = EntryFromType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for EntryFromType: %T", src)
+	}
+	return nil
+}
+
+type NullEntryFromType struct {
+	EntryFromType EntryFromType `json:"entry_from_type"`
+	Valid         bool          `json:"valid"` // Valid is true if EntryFromType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullEntryFromType) Scan(value interface{}) error {
+	if value == nil {
+		ns.EntryFromType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.EntryFromType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullEntryFromType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.EntryFromType), nil
+}
+
 type InvestmentStatus string
 
 const (
@@ -59,18 +101,17 @@ type Account struct {
 	ChannelName string             `json:"channel_name"`
 	Owner       string             `json:"owner"`
 	Balance     pgtype.Numeric     `json:"balance"`
-	BuyFee      pgtype.Numeric     `json:"buy_fee"`
-	SellFree    pgtype.Numeric     `json:"sell_free"`
 	Currency    string             `json:"currency"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 }
 
-type Entry struct {
+type AccountEntry struct {
 	ID       int64       `json:"id"`
 	AcountID pgtype.Int8 `json:"acount_id"`
 	// can be possitive or negative
 	Amount    pgtype.Numeric     `json:"amount"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	FromType  EntryFromType      `json:"from_type"`
 }
 
 type Investment struct {

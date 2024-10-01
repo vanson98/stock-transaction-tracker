@@ -12,6 +12,7 @@ import (
 
 type Querier interface {
 	CreateAccount(ctx context.Context, arg CreateAccountParams) (Account, error)
+	CreateAccountEntry(ctx context.Context, arg CreateAccountEntryParams) (AccountEntry, error)
 	CreateInvestment(ctx context.Context, arg CreateInvestmentParams) (Investment, error)
 	DeleteAccount(ctx context.Context, id int64) error
 	GetAccountById(ctx context.Context, id int64) (Account, error)

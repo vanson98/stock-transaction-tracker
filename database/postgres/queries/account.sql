@@ -1,6 +1,6 @@
 -- name: CreateAccount :one
-INSERT INTO accounts(channel_name,"owner",balance,buy_fee,sell_free,currency)
-VALUES($1,$2,$3,$4,$5,$6)
+INSERT INTO accounts(channel_name,"owner",balance,currency)
+VALUES($1,$2,$3,$4)
 RETURNING *;
 
 -- name: ListAccounts :many
