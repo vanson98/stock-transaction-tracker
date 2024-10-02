@@ -100,44 +100,44 @@ type Account struct {
 	ID          int64              `json:"id"`
 	ChannelName string             `json:"channel_name"`
 	Owner       string             `json:"owner"`
-	Balance     pgtype.Numeric     `json:"balance"`
+	Balance     int64              `json:"balance"`
 	Currency    string             `json:"currency"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 }
 
 type AccountEntry struct {
-	ID       int64       `json:"id"`
-	AcountID pgtype.Int8 `json:"acount_id"`
+	ID        int64 `json:"id"`
+	AccountID int64 `json:"account_id"`
 	// can be possitive or negative
-	Amount    pgtype.Numeric     `json:"amount"`
+	Amount    int64              `json:"amount"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	FromType  EntryFromType      `json:"from_type"`
 }
 
 type Investment struct {
 	ID              int64            `json:"id"`
-	AccountID       pgtype.Int8      `json:"account_id"`
+	AccountID       int64            `json:"account_id"`
 	StockCode       string           `json:"stock_code"`
 	CompanyName     pgtype.Text      `json:"company_name"`
 	TotalBuyAmount  int32            `json:"total_buy_amount"`
-	TotalMoneyBuy   pgtype.Numeric   `json:"total_money_buy"`
-	CapitalCost     pgtype.Numeric   `json:"capital_cost"`
-	MarketPrice     pgtype.Numeric   `json:"market_price"`
+	TotalMoneyBuy   int64            `json:"total_money_buy"`
+	CapitalCost     int64            `json:"capital_cost"`
+	MarketPrice     int64            `json:"market_price"`
 	TotalSellAmount int32            `json:"total_sell_amount"`
-	TotalMoneySell  pgtype.Numeric   `json:"total_money_sell"`
+	TotalMoneySell  int64            `json:"total_money_sell"`
 	CurrentVolume   int32            `json:"current_volume"`
 	Description     pgtype.Text      `json:"description"`
 	Status          InvestmentStatus `json:"status"`
 }
 
 type Transaction struct {
-	ID           int64          `json:"id"`
-	InvestmentID pgtype.Int8    `json:"investment_id"`
-	CapitalCost  pgtype.Numeric `json:"capital_cost"`
-	Price        pgtype.Numeric `json:"price"`
+	ID           int64 `json:"id"`
+	InvestmentID int64 `json:"investment_id"`
+	CapitalCost  int64 `json:"capital_cost"`
+	Price        int64 `json:"price"`
 	// must be possitive
 	Amount    int32              `json:"amount"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	Type      string             `json:"type"`
-	Fee       pgtype.Numeric     `json:"fee"`
+	Fee       int64              `json:"fee"`
 }

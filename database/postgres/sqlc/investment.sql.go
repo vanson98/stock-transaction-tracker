@@ -18,14 +18,14 @@ RETURNING id, account_id, stock_code, company_name, total_buy_amount, total_mone
 `
 
 type CreateInvestmentParams struct {
-	AccountID       pgtype.Int8      `json:"account_id"`
+	AccountID       int64            `json:"account_id"`
 	StockCode       string           `json:"stock_code"`
 	CompanyName     pgtype.Text      `json:"company_name"`
-	TotalMoneyBuy   pgtype.Numeric   `json:"total_money_buy"`
-	CapitalCost     pgtype.Numeric   `json:"capital_cost"`
-	MarketPrice     pgtype.Numeric   `json:"market_price"`
+	TotalMoneyBuy   int64            `json:"total_money_buy"`
+	CapitalCost     int64            `json:"capital_cost"`
+	MarketPrice     int64            `json:"market_price"`
 	TotalSellAmount int32            `json:"total_sell_amount"`
-	TotalMoneySell  pgtype.Numeric   `json:"total_money_sell"`
+	TotalMoneySell  int64            `json:"total_money_sell"`
 	CurrentVolume   int32            `json:"current_volume"`
 	Description     pgtype.Text      `json:"description"`
 	Status          InvestmentStatus `json:"status"`
@@ -108,7 +108,7 @@ select id, account_id, stock_code, company_name, total_buy_amount, total_money_b
 where account_id=$1
 `
 
-func (q *Queries) GetInvestmentByAccountId(ctx context.Context, accountID pgtype.Int8) ([]Investment, error) {
+func (q *Queries) GetInvestmentByAccountId(ctx context.Context, accountID int64) ([]Investment, error) {
 	rows, err := q.db.Query(ctx, getInvestmentByAccountId, accountID)
 	if err != nil {
 		return nil, err

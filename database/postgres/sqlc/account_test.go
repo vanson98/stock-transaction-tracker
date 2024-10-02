@@ -14,7 +14,7 @@ func createRandomAccount(t *testing.T) Account {
 	arg := CreateAccountParams{
 		ChannelName: util.RandomString(3),
 		Owner:       util.RandomOwner(),
-		Balance:     util.RandomPgNumeric(1, 1000000),
+		Balance:     util.RandomInt(1, 1000),
 		Currency:    util.RandomCurrency(),
 	}
 	account, err := testQueries.CreateAccount(context.Background(), arg)
@@ -55,7 +55,7 @@ func TestUpdateAccountBalance(t *testing.T) {
 	account1 := createRandomAccount(t)
 	param := UpdateAccountBalanceParams{
 		ID:      account1.ID,
-		Balance: util.RandomPgNumeric(1, 100),
+		Balance: util.RandomInt(1, 10000000000),
 	}
 
 	account2, err := testQueries.UpdateAccountBalance(context.Background(), param)

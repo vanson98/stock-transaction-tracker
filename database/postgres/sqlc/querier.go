@@ -6,8 +6,6 @@ package db
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
@@ -16,8 +14,9 @@ type Querier interface {
 	CreateInvestment(ctx context.Context, arg CreateInvestmentParams) (Investment, error)
 	DeleteAccount(ctx context.Context, id int64) error
 	GetAccountById(ctx context.Context, id int64) (Account, error)
+	GetAccountEntryById(ctx context.Context, id int64) (AccountEntry, error)
 	GetAllInvestment(ctx context.Context) ([]Investment, error)
-	GetInvestmentByAccountId(ctx context.Context, accountID pgtype.Int8) ([]Investment, error)
+	GetInvestmentByAccountId(ctx context.Context, accountID int64) ([]Investment, error)
 	GetInvestmentByCode(ctx context.Context, stockCode string) (Investment, error)
 	ListAccounts(ctx context.Context, arg ListAccountsParams) ([]Account, error)
 	UpdateAccountBalance(ctx context.Context, arg UpdateAccountBalanceParams) (Account, error)

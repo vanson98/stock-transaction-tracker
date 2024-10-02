@@ -25,14 +25,14 @@ func RandomFloat(min, max float64) float64 {
 	return min + rand.Float64()*max
 }
 
-func RandomPgNumeric(min, max int64) pgtype.Numeric {
+func RandomPgNumeric(min, max int64, exp int32) pgtype.Numeric {
 	randomInt := RandomInt(min, max)
 	randomFraction := rand.Int63n(100)
 	numericValue := big.NewInt(randomInt*1000 + randomFraction)
 	var numeric pgtype.Numeric
 	numeric.Int = numericValue
 	// Set the exponent to position the decimal point (6 means 6 decimal places)
-	numeric.Exp = -3
+	numeric.Exp = -exp
 	numeric.Valid = true
 	return numeric
 }

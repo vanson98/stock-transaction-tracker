@@ -7,28 +7,44 @@ package db
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createAccountEntry = `-- name: CreateAccountEntry :one
-INSERT INTO account_entries(acount_id,amount,from_type)
+INSERT INTO account_entries(account_id,amount,from_type)
 VALUES($1,$2,$3)
-RETURNING id, acount_id, amount, created_at, from_type
+RETURNING id, account_id, amount, created_at, from_type
 `
 
 type CreateAccountEntryParams struct {
-	AcountID pgtype.Int8    `json:"acount_id"`
-	Amount   pgtype.Numeric `json:"amount"`
-	FromType EntryFromType  `json:"from_type"`
+	AccountID int64         `json:"account_id"`
+	Amount    int64         `json:"amount"`
+	FromType  EntryFromType `json:"from_type"`
 }
 
 func (q *Queries) CreateAccountEntry(ctx context.Context, arg CreateAccountEntryParams) (AccountEntry, error) {
-	row := q.db.QueryRow(ctx, createAccountEntry, arg.AcountID, arg.Amount, arg.FromType)
+	row := q.db.QueryRow(ctx, createAccountEntry, arg.AccountID, arg.Amount, arg.FromType)
 	var i AccountEntry
 	err := row.Scan(
 		&i.ID,
-		&i.AcountID,
+		&i.AccountID,
+		&i.Amount,
+		&i.CreatedAt,
+		&i.FromType,
+	)
+	return i, err
+}
+
+const getAccountEntryById = `-- name: GetAccountEntryById :one
+SELECT id, account_id, amount, created_at, from_type FROM account_entries
+WHERE id=$1
+`
+
+func (q *Queries) GetAccountEntryById(ctx context.Context, id int64) (AccountEntry, error) {
+	row := q.db.QueryRow(ctx, getAccountEntryById, id)
+	var i AccountEntry
+	err := row.Scan(
+		&i.ID,
+		&i.AccountID,
 		&i.Amount,
 		&i.CreatedAt,
 		&i.FromType,
