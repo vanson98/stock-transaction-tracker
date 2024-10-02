@@ -11,46 +11,46 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type EntryFromType string
+type EntryType string
 
 const (
-	EntryFromTypeTM EntryFromType = "TM"
-	EntryFromTypeIT EntryFromType = "IT"
+	EntryTypeTM EntryType = "TM"
+	EntryTypeIT EntryType = "IT"
 )
 
-func (e *EntryFromType) Scan(src interface{}) error {
+func (e *EntryType) Scan(src interface{}) error {
 	switch s := src.(type) {
 	case []byte:
-		*e = EntryFromType(s)
+		*e = EntryType(s)
 	case string:
-		*e = EntryFromType(s)
+		*e = EntryType(s)
 	default:
-		return fmt.Errorf("unsupported scan type for EntryFromType: %T", src)
+		return fmt.Errorf("unsupported scan type for EntryType: %T", src)
 	}
 	return nil
 }
 
-type NullEntryFromType struct {
-	EntryFromType EntryFromType `json:"entry_from_type"`
-	Valid         bool          `json:"valid"` // Valid is true if EntryFromType is not NULL
+type NullEntryType struct {
+	EntryType EntryType `json:"entry_type"`
+	Valid     bool      `json:"valid"` // Valid is true if EntryType is not NULL
 }
 
 // Scan implements the Scanner interface.
-func (ns *NullEntryFromType) Scan(value interface{}) error {
+func (ns *NullEntryType) Scan(value interface{}) error {
 	if value == nil {
-		ns.EntryFromType, ns.Valid = "", false
+		ns.EntryType, ns.Valid = "", false
 		return nil
 	}
 	ns.Valid = true
-	return ns.EntryFromType.Scan(value)
+	return ns.EntryType.Scan(value)
 }
 
 // Value implements the driver Valuer interface.
-func (ns NullEntryFromType) Value() (driver.Value, error) {
+func (ns NullEntryType) Value() (driver.Value, error) {
 	if !ns.Valid {
 		return nil, nil
 	}
-	return string(ns.EntryFromType), nil
+	return string(ns.EntryType), nil
 }
 
 type InvestmentStatus string
@@ -105,13 +105,13 @@ type Account struct {
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 }
 
-type AccountEntry struct {
+type Entry struct {
 	ID        int64 `json:"id"`
 	AccountID int64 `json:"account_id"`
 	// can be possitive or negative
 	Amount    int64              `json:"amount"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	FromType  EntryFromType      `json:"from_type"`
+	Type      EntryType          `json:"type"`
 }
 
 type Investment struct {

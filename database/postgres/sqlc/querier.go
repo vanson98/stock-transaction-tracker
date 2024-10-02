@@ -9,17 +9,18 @@ import (
 )
 
 type Querier interface {
+	AddAccountBalance(ctx context.Context, arg AddAccountBalanceParams) (Account, error)
 	CreateAccount(ctx context.Context, arg CreateAccountParams) (Account, error)
-	CreateAccountEntry(ctx context.Context, arg CreateAccountEntryParams) (AccountEntry, error)
+	CreateEntry(ctx context.Context, arg CreateEntryParams) (Entry, error)
 	CreateInvestment(ctx context.Context, arg CreateInvestmentParams) (Investment, error)
 	DeleteAccount(ctx context.Context, id int64) error
 	GetAccountById(ctx context.Context, id int64) (Account, error)
-	GetAccountEntryById(ctx context.Context, id int64) (AccountEntry, error)
+	GetAccountForUpdate(ctx context.Context, id int64) (Account, error)
 	GetAllInvestment(ctx context.Context) ([]Investment, error)
+	GetEntryById(ctx context.Context, id int64) (Entry, error)
 	GetInvestmentByAccountId(ctx context.Context, accountID int64) ([]Investment, error)
 	GetInvestmentByCode(ctx context.Context, stockCode string) (Investment, error)
 	ListAccounts(ctx context.Context, arg ListAccountsParams) ([]Account, error)
-	UpdateAccountBalance(ctx context.Context, arg UpdateAccountBalanceParams) (Account, error)
 	UpdateInvestmentStatus(ctx context.Context, arg UpdateInvestmentStatusParams) error
 }
 

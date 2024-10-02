@@ -7,14 +7,19 @@ RETURNING *;
 SELECT * FROM accounts
 OFFSET $1 LIMIT $2;
 
+-- name: GetAccountForUpdate :one
+SELECT * FROM accounts
+WHERE id=$1 LIMIT 1
+FOR NO KEY UPDATE;
+
 -- name: GetAccountById :one
 SELECT * FROM accounts
-WHERE id=$1;
+WHERE id=$1 LIMIT 1;
 
--- name: UpdateAccountBalance :one
+-- name: AddAccountBalance :one
 UPDATE accounts
-SET balance = $1
-WHERE id = $2
+SET balance = balance + sqlc.arg(amount)
+WHERE id = sqlc.arg(id)
 RETURNING *;
 
 

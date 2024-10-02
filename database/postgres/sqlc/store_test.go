@@ -2,28 +2,33 @@ package db
 
 import (
 	"context"
-	"stt/util"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
+var existed map[int]bool = make(map[int]bool, 0)
+
 func TestTranserTx(t *testing.T) {
 	store := NewStore(pgConnPool)
 
-	acc := createRandomAccount(t)
-	n := 2
-	amount := util.RandomInt(-50, 50)
+	account := createRandomAccount(t)
+	fmt.Println(">> before:", account.Balance)
+	n := 5
+	var amount int64 = 10
 
 	errChan := make(chan error)
 	resultChan := make(chan TransferTxResult)
 
 	for i := 0; i < n; i++ {
+		txName := fmt.Sprintf("tx %d", i)
 		go func() {
-			result, err := store.TranserTx(context.Background(), TransferTxParam{
-				AccountID:     acc.ID,
-				Amount:        amount,
-				EntryFromType: EntryFromTypeIT,
+			ctx := context.WithValue(context.Background(), txKey, txName)
+			result, err := store.TranserTx(ctx, TransferTxParam{
+				AccountID: account.ID,
+				Amount:    amount,
+				EntryType: EntryTypeIT,
 			})
 			errChan <- err
 			resultChan <- result
@@ -38,24 +43,36 @@ func TestTranserTx(t *testing.T) {
 		require.NotEmpty(t, result)
 
 		entry := result.AccountEntry
-		account := result.UpdatedAccount
+		updatedAccount := result.UpdatedAccount
 
 		// check entry
 		require.NotEmpty(t, entry)
 		require.Equal(t, entry.Amount, amount)
-		require.Equal(t, entry.AccountID, account.ID)
+		require.Equal(t, entry.AccountID, updatedAccount.ID)
 		require.NotZero(t, entry.AccountID)
 		require.NotZero(t, entry.CreatedAt)
-		require.NotZero(t, entry.FromType)
+		require.NotZero(t, entry.Type)
 		require.NotZero(t, entry.AccountID)
 
-		// check entry exist
-		_, err = testQueries.GetAccountEntryById(context.Background(), entry.ID)
+		_, err = testQueries.GetEntryById(context.Background(), entry.ID)
 		require.NoError(t, err)
 
-		// check balance
-		//require.Equal(t, acc.Balance+amount, account.Balance)
+		// check account
+		require.NotEmpty(t, updatedAccount)
+		require.Equal(t, updatedAccount.ID, account.ID)
+		require.Equal(t, updatedAccount.Owner, account.Owner)
+		require.Equal(t, updatedAccount.ChannelName, account.ChannelName)
+		require.Equal(t, updatedAccount.CreatedAt, account.CreatedAt)
 
+		// check balance
+		fmt.Println(">> tx:", updatedAccount.Balance)
+		diff := updatedAccount.Balance - account.Balance
+		require.True(t, diff%amount == 0)
+		require.Equal(t, account.Balance+diff, updatedAccount.Balance)
+		k := int(diff / amount)
+		require.True(t, k >= 1 && k <= n)
+		require.NotContains(t, existed, k)
+		existed[k] = true
 	}
 
 }
