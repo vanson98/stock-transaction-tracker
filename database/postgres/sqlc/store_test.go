@@ -8,14 +8,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var existed map[int]bool = make(map[int]bool, 0)
-
 func TestTranserTx(t *testing.T) {
 	store := NewStore(pgConnPool)
 
 	account := createRandomAccount(t)
 	fmt.Println(">> before:", account.Balance)
-	n := 5
+	n := 100
 	var amount int64 = 10
 
 	errChan := make(chan error)
@@ -34,7 +32,7 @@ func TestTranserTx(t *testing.T) {
 			resultChan <- result
 		}()
 	}
-
+	var existed map[int]bool = make(map[int]bool, 0)
 	for i := 0; i < n; i++ {
 		err := <-errChan
 		require.NoError(t, err)
