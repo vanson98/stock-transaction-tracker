@@ -7,9 +7,9 @@ createdb:
 dropdb:
 	docker exec -it  postgres_db dropdb stock_tracker
 migrateup:
-	migrate -path database/postgres/migration --database "postgresql://root:123456@localhost:5432/stock_tracker?sslmode=disable" --verbose up
+	migrate -path database/postgres/migration -database "postgresql://root:123456@localhost:5432/stock_tracker?sslmode=disable" -verbose up
 migratedown:
-	migrate -path database/postgres/migration --database "postgresql://root:123456@localhost:5432/stock_tracker?sslmode=disable" --verbose down 1
+	migrate -path database/postgres/migration -database "postgresql://root:123456@localhost:5432/stock_tracker?sslmode=disable" -verbose down 1
 sqlc: 
 	sqlc generate
 test: 
