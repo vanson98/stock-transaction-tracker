@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	app := bootstrap.App()
+	app := bootstrap.App("../")
 	env := app.Env
 
 	connectionPool := app.PostgresConnectionPool

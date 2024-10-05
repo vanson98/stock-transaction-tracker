@@ -7,9 +7,9 @@ type Application struct {
 	PostgresConnectionPool *pgxpool.Pool
 }
 
-func App() Application {
+func App(envPath string) Application {
 	app := &Application{}
-	app.Env = NewEnv()
+	app.Env = NewEnv(envPath)
 	app.PostgresConnectionPool = NewPostgresConnectionPool(app.Env)
 	return *app
 }

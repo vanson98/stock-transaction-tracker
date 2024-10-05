@@ -16,9 +16,11 @@ type Env struct {
 	ServerAddress  string `mapstructure:"SERVER_ADDRESS"`
 }
 
-func NewEnv() *Env {
+func NewEnv(path string) *Env {
 	env := Env{}
-	viper.SetConfigFile("/Users/vanson/Projects/stock-transaction-tracker/.env")
+	viper.AddConfigPath(path)  // Look in the parent directory
+	viper.SetConfigName("app") // The name of the file (without extension)
+	viper.SetConfigType("env") // Set the file type to ".env"
 	err := viper.ReadInConfig()
 	if err != nil {
 		log.Fatal("Can't find the file .env:", err)
