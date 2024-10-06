@@ -1,4 +1,4 @@
-runapp:
+server:
 	go run ./cmd/main.go
 postgres:
 	docker run --name postgres_db -e POSTGRES_USER=root -e POSTGRES_PASSWORD=123456 -p 5432:5432 -v pgdata:/var/lib/postgresql/data -d postgres
@@ -14,4 +14,4 @@ sqlc:
 	sqlc generate
 test: 
 	go test -v -cover ./database/postgres/sqlc
-.PHONY: sqlc runapp postgres createdb dropdb migrateup migratedown
+.PHONY: sqlc runapp postgres createdb dropdb migrateup migratedown server

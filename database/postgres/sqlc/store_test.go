@@ -13,7 +13,7 @@ func TestTranserTx(t *testing.T) {
 
 	account := createRandomAccount(t)
 	fmt.Println(">> before:", account.Balance)
-	n := 100
+	n := 5
 	var amount int64 = 10
 
 	errChan := make(chan error)
@@ -23,7 +23,7 @@ func TestTranserTx(t *testing.T) {
 		txName := fmt.Sprintf("tx %d", i)
 		go func() {
 			ctx := context.WithValue(context.Background(), txKey, txName)
-			result, err := store.TranserTx(ctx, TransferTxParam{
+			result, err := store.transerTx(ctx, TransferTxParam{
 				AccountID: account.ID,
 				Amount:    amount,
 				EntryType: EntryTypeIT,

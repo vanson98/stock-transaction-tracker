@@ -8,13 +8,13 @@ import (
 )
 
 type investmentService struct {
-	queries        *db.Queries
+	store          *db.Store
 	contextTimeout time.Duration
 }
 
-func InitInvestmentService(q *db.Queries, timeout time.Duration) domain.IInvestmentService {
+func InitInvestmentService(store *db.Store, timeout time.Duration) domain.IInvestmentService {
 	return investmentService{
-		queries:        q,
+		store:          store,
 		contextTimeout: timeout,
 	}
 }
@@ -23,7 +23,7 @@ func InitInvestmentService(q *db.Queries, timeout time.Duration) domain.IInvestm
 func (ivs investmentService) Create(c context.Context, param db.CreateInvestmentParams) (db.Investment, error) {
 	ctx, cancel := context.WithTimeout(c, ivs.contextTimeout)
 	defer cancel()
-	return ivs.queries.CreateInvestment(ctx, param)
+	return ivs.store.Queries.CreateInvestment(ctx, param)
 }
 
 // Delete implements domain.IInvestmentService.

@@ -8,10 +8,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func Setup(env *bootstrap.Env, timeout time.Duration, q *db.Queries, gin *gin.Engine) {
+func Setup(env *bootstrap.Env, timeout time.Duration, store *db.Store, gin *gin.Engine) {
 	//publicRouter := gin.Group("")
 
-	// All public APIs
+	// All protected APIs
 	protectedRouter := gin.Group("")
-	NewInvestmentRouter(env, timeout, q, protectedRouter)
+
+	NewInvestmentRouter(env, timeout, store, protectedRouter)
+	NewAccountRouter(store, timeout, protectedRouter)
 }

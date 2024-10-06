@@ -10,19 +10,19 @@ import (
 
 type Store struct {
 	dbPool  *pgxpool.Pool
-	queries *Queries
+	Queries *Queries
 }
 
 func NewStore(dbp *pgxpool.Pool) *Store {
 	return &Store{
 		dbPool:  dbp,
-		queries: New(dbp),
+		Queries: New(dbp),
 	}
 }
 
 func (store *Store) execTx(ctx context.Context, fn func(*Queries) error) error {
 	tx, err := store.dbPool.BeginTx(ctx, pgx.TxOptions{
-		IsoLevel: pgx.ReadCommitted,
+		IsoLevel: pgx.Serializable,
 	})
 	if err != nil {
 		return err
@@ -54,7 +54,7 @@ var txKey = struct{}{}
 
 // TransferTx perform a money transfer in or out of account
 // Create account entries and update account's balance within a single database transaction
-func (store *Store) TranserTx(ctx context.Context, arg TransferTxParam) (TransferTxResult, error) {
+func (store *Store) transerTx(ctx context.Context, arg TransferTxParam) (TransferTxResult, error) {
 	var result TransferTxResult
 	err := store.execTx(ctx, func(q *Queries) error {
 		var err error
