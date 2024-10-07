@@ -15,7 +15,7 @@ func main() {
 	timeout := time.Duration(app.Env.ContextTimeout) * time.Second
 	defer app.CloseDbConnection()
 
-	// Set up database store for quering and handle transaction (core)
+	// Set up database store for quering and handle db transaction (core)
 	dbStore := db.NewStore(app.PostgresConnectionPool)
 
 	// Handle routing to controllers

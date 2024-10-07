@@ -8,28 +8,32 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type Store struct {
-	dbPool  *pgxpool.Pool
-	Queries *Queries
+type Store interface {
+	Querier
+	transerTx(ctx context.Context, arg TransferTxParam) (TransferTxResult, error)
 }
 
-func NewStore(dbp *pgxpool.Pool) *Store {
-	return &Store{
-		dbPool:  dbp,
-		Queries: New(dbp),
+type DBStore struct {
+	connectionPool *pgxpool.Pool
+	*Queries
+}
+
+func NewStore(cnnPool *pgxpool.Pool) Store {
+	return &DBStore{
+		connectionPool: cnnPool,
+		Queries:        New(cnnPool),
 	}
 }
 
-func (store *Store) execTx(ctx context.Context, fn func(*Queries) error) error {
-	tx, err := store.dbPool.BeginTx(ctx, pgx.TxOptions{
+func (store *DBStore) execTx(ctx context.Context, fn func(*Queries) error) error {
+	tx, err := store.connectionPool.BeginTx(ctx, pgx.TxOptions{
 		IsoLevel: pgx.Serializable,
 	})
 	if err != nil {
 		return err
 	}
 
-	q := New(tx)
-	err = fn(q)
+	err = fn(store.Queries)
 	if err != nil {
 		if rbErr := tx.Rollback(ctx); rbErr != nil {
 			return fmt.Errorf("tx err: %v, rb err: %v", err, rbErr)
@@ -54,8 +58,9 @@ var txKey = struct{}{}
 
 // TransferTx perform a money transfer in or out of account
 // Create account entries and update account's balance within a single database transaction
-func (store *Store) transerTx(ctx context.Context, arg TransferTxParam) (TransferTxResult, error) {
+func (store *DBStore) transerTx(ctx context.Context, arg TransferTxParam) (TransferTxResult, error) {
 	var result TransferTxResult
+
 	err := store.execTx(ctx, func(q *Queries) error {
 		var err error
 		txName := ctx.Value(txKey)

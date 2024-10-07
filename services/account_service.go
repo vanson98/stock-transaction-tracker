@@ -8,11 +8,11 @@ import (
 )
 
 type accountService struct {
-	store   *db.Store
+	store   db.Store
 	timeout time.Duration
 }
 
-func InitAccountService(store *db.Store, timeout time.Duration) domain.IAccountService {
+func InitAccountService(store db.Store, timeout time.Duration) domain.IAccountService {
 	return accountService{
 		store:   store,
 		timeout: timeout,
@@ -21,5 +21,5 @@ func InitAccountService(store *db.Store, timeout time.Duration) domain.IAccountS
 
 // CreateNew implements domain.IAccountService.
 func (as accountService) CreateNew(ctx context.Context, param db.CreateAccountParams) (db.Account, error) {
-	return as.store.Queries.CreateAccount(ctx, param)
+	return as.store.CreateAccount(ctx, param)
 }

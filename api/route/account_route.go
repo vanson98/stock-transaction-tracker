@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func NewAccountRouter(dbStore *db.Store, timeout time.Duration, routerGroup *gin.RouterGroup) {
+func NewAccountRouter(dbStore db.Store, timeout time.Duration, routerGroup *gin.RouterGroup) {
 	accountController := controller.AccountController{
 		AccountService: services.InitAccountService(dbStore, timeout),
 	}

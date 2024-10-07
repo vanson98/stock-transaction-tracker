@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func NewInvestmentRouter(env *bootstrap.Env, timeout time.Duration, dbStore *db.Store, group *gin.RouterGroup) {
+func NewInvestmentRouter(env *bootstrap.Env, timeout time.Duration, dbStore db.Store, group *gin.RouterGroup) {
 	ic := controller.InvestmentController{
 		InvestmentService: services.InitInvestmentService(dbStore, timeout),
 	}
