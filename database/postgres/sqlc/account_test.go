@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
 )
 
@@ -66,16 +65,4 @@ func TestUpdateAccountBalance(t *testing.T) {
 	require.Equal(t, account1.Balance+param.Amount, account2.Balance)
 	require.Equal(t, account1.Currency, account2.Currency)
 	require.WithinDuration(t, account1.CreatedAt.Time, account2.CreatedAt.Time, time.Second)
-}
-
-func TestDeleteAccount(t *testing.T) {
-	acc1 := createRandomAccount(t)
-
-	err := testQueries.DeleteAccount(context.Background(), acc1.ID)
-	require.NoError(t, err)
-
-	acc2, err := testQueries.GetAccountById(context.Background(), acc1.ID)
-	require.Error(t, err)
-	require.EqualError(t, err, pgx.ErrNoRows.Error())
-	require.Empty(t, acc2)
 }

@@ -8,11 +8,11 @@ import (
 )
 
 type investmentService struct {
-	store          db.Store
+	store          db.IStore
 	contextTimeout time.Duration
 }
 
-func InitInvestmentService(store db.Store, timeout time.Duration) domain.IInvestmentService {
+func InitInvestmentService(store db.IStore, timeout time.Duration) domain.IInvestmentService {
 	return investmentService{
 		store:          store,
 		contextTimeout: timeout,

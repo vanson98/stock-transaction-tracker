@@ -14,4 +14,6 @@ sqlc:
 	sqlc generate
 test: 
 	go test -v -cover ./database/postgres/sqlc
-.PHONY: sqlc runapp postgres createdb dropdb migrateup migratedown server
+mock:
+	mockgen -package mock_service  -destination services/mock/service_mock.go stt/domain IAccountService,IInvestmentService
+.PHONY: sqlc runapp postgres createdb dropdb migrateup migratedown server mock
