@@ -2,16 +2,14 @@ package route
 
 import (
 	"stt/api/controller"
-	db "stt/database/postgres/sqlc"
-	"stt/services"
-	"time"
+	"stt/domain"
 
 	"github.com/gin-gonic/gin"
 )
 
-func NewAccountRouter(dbStore db.IStore, timeout time.Duration, routerGroup *gin.RouterGroup) {
+func InitAccountRouter(routerGroup *gin.RouterGroup, accountService domain.IAccountService) {
 	accountController := controller.AccountController{
-		AccountService: services.InitAccountService(dbStore, timeout),
+		AccountService: accountService,
 	}
 
 	routerGroup.POST("/account", accountController.CreateNewAccount)

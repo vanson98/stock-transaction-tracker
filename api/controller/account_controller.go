@@ -2,6 +2,7 @@ package controller
 
 import (
 	"net/http"
+	apimodels "stt/api/models"
 	db "stt/database/postgres/sqlc"
 	"stt/domain"
 
@@ -12,14 +13,8 @@ type AccountController struct {
 	AccountService domain.IAccountService
 }
 
-type createAccountRequest struct {
-	ChannelName string `json:"channel_name" binding:"required"`
-	Owner       string `json:"owner" binding:"required"`
-	Currency    string `json:"currency" binding:"required,oneof=USD VND EUR"`
-}
-
 func (ac *AccountController) CreateNewAccount(ctx *gin.Context) {
-	var reqBody createAccountRequest
+	var reqBody apimodels.CreateAccountRequest
 	if err := ctx.ShouldBindBodyWithJSON(&reqBody); err != nil {
 		ctx.JSON(http.StatusBadRequest, err.Error())
 		return

@@ -2,17 +2,14 @@ package route
 
 import (
 	"stt/api/controller"
-	"stt/bootstrap"
-	db "stt/database/postgres/sqlc"
-	"stt/services"
-	"time"
+	"stt/domain"
 
 	"github.com/gin-gonic/gin"
 )
 
-func NewInvestmentRouter(env *bootstrap.Env, timeout time.Duration, dbStore db.IStore, group *gin.RouterGroup) {
+func InitInvestmentRouter(group *gin.RouterGroup, investmentService *domain.IInvestmentService) {
 	ic := controller.InvestmentController{
-		InvestmentService: services.InitInvestmentService(dbStore, timeout),
+		InvestmentService: *investmentService,
 	}
 
 	group.GET("/investments", ic.GetAll)

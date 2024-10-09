@@ -17,9 +17,11 @@ var accService domain.IAccountService
 
 func TestMain(m *testing.M) {
 	var timeout time.Duration = 3
-	pgConnPool = bootstrap.App("..").PostgresConnectionPool
-	store = db.NewStore(pgConnPool)
+	env := bootstrap.NewEnv("..")
+	pgConnPool = bootstrap.NewPostgresConnectionPool(env)
+	defer bootstrap.ClosePostgresDbConnectionPool(pgConnPool)
 
+	store = db.NewStore(pgConnPool)
 	accService = InitAccountService(store, timeout)
 	os.Exit(m.Run())
 }

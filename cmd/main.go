@@ -4,23 +4,25 @@ import (
 	"stt/api/route"
 	"stt/bootstrap"
 	db "stt/database/postgres/sqlc"
+	"stt/services"
 	"time"
-
-	"github.com/gin-gonic/gin"
 )
 
 func main() {
 	// set up bootstrap for db connection and environment variable, configuration
-	app := bootstrap.App(".")
-	timeout := time.Duration(app.Env.ContextTimeout) * time.Second
-	defer app.CloseDbConnection()
+	app := bootstrap.NewServerApp(".")
 
 	// Set up database store for quering and handle db transaction (core)
 	dbStore := db.NewStore(app.PostgresConnectionPool)
+	timeout := time.Duration(app.Env.ContextTimeout) * time.Second
 
-	// Handle routing to controllers
-	gin := gin.Default()
-	route.Setup(app.Env, timeout, dbStore, gin)
+	accountService := services.InitAccountService(dbStore, timeout)
 
-	gin.Run(app.Env.ServerAddress)
+	protectedRouterGroup := app.Engine.Group("")
+	route.InitAccountRouter(protectedRouterGroup, accountService)
+
+	app.Engine.Run(app.Env.ServerAddress)
+
+	defer app.CloseDbConnection()
+
 }

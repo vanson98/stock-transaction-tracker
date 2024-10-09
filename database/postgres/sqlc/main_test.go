@@ -12,7 +12,8 @@ var testQueries *Queries
 var pgConnPool *pgxpool.Pool
 
 func TestMain(m *testing.M) {
-	pgConnPool = bootstrap.App("../../..").PostgresConnectionPool
+	env := bootstrap.NewEnv("../../..")
+	pgConnPool = bootstrap.NewPostgresConnectionPool(env)
 	testQueries = New(pgConnPool)
 	os.Exit(m.Run())
 }
