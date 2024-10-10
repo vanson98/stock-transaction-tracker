@@ -27,7 +27,7 @@ func NewStore(cnnPool *pgxpool.Pool) IStore {
 
 func (store *DBStore) ExecTx(ctx context.Context, fn func(*Queries) error) error {
 	tx, err := store.connectionPool.BeginTx(ctx, pgx.TxOptions{
-		IsoLevel: pgx.Serializable,
+		IsoLevel: pgx.ReadCommitted,
 	})
 	if err != nil {
 		return err

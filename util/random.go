@@ -67,6 +67,12 @@ func RandomCurrency() string {
 	return currencies[rand.Intn(n)]
 }
 
+func RandomEntryType() string {
+	types := []string{"IT", "TM"}
+	n := len(types)
+	return types[rand.Intn(n)]
+}
+
 // RandomEmail generates a random email
 func RandomEmail() string {
 	return fmt.Sprintf("%s@email.com", RandomString(6))

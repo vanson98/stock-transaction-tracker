@@ -61,7 +61,7 @@ func (as accountService) TransferMoney(ctx context.Context, arg dtos.TransferMon
 		if err != nil {
 			return err
 		}
-		result.AccountEntry = accEntry
+		result.Entry = accEntry
 
 		// get account for update
 		// fmt.Println(txName, "get account for update")

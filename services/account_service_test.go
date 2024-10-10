@@ -120,7 +120,7 @@ func TestTranserMoneyTx(t *testing.T) {
 		result := <-resultChan
 		require.NotEmpty(t, result)
 
-		entry := result.AccountEntry
+		entry := result.Entry
 		updatedAccount := result.UpdatedAccount
 
 		// check entry

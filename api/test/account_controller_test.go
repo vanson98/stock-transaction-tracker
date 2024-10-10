@@ -12,6 +12,7 @@ import (
 	"stt/api/route"
 	"stt/bootstrap"
 	db "stt/database/postgres/sqlc"
+	"stt/services/dtos"
 	mock_service "stt/services/mock"
 	"stt/util"
 	"testing"
@@ -105,7 +106,7 @@ func TestCreateAccountAPI(t *testing.T) {
 			requestBody, err := json.Marshal(tc.params)
 			require.NoError(t, err)
 
-			request, err := http.NewRequest("POST", "/account", bytes.NewBuffer(requestBody))
+			request, err := http.NewRequest("POST", "/accounts", bytes.NewBuffer(requestBody))
 			require.NoError(t, err)
 			recorder := httptest.NewRecorder()
 			server.Engine.ServeHTTP(recorder, request)
@@ -124,18 +125,38 @@ func TestGetAccountAPI(t *testing.T) {
 
 	testCases := []struct {
 		name          string
-		param         apimodels.GetAccountRequest
+		param         int64
 		buildStubs    func(accountService *mock_service.MockIAccountService)
 		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
 	}{
 		{
 			name:  "OK",
-			param: apimodels.GetAccountRequest{Id: account.ID},
+			param: account.ID,
 			buildStubs: func(accService *mock_service.MockIAccountService) {
 				accService.EXPECT().GetById(gomock.Any(), gomock.Eq(account.ID)).Times(1).Return(account, nil)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
+			},
+		},
+		{
+			name:  "Bad Request",
+			param: -1,
+			buildStubs: func(accService *mock_service.MockIAccountService) {
+				accService.EXPECT().GetById(gomock.Any(), gomock.Any()).Times(0)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name:  "Internal Server Error",
+			param: account.ID,
+			buildStubs: func(accService *mock_service.MockIAccountService) {
+				accService.EXPECT().GetById(gomock.Any(), gomock.Eq(account.ID)).Times(1).Return(db.Account{}, sql.ErrConnDone)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
 		},
 	}
@@ -150,10 +171,7 @@ func TestGetAccountAPI(t *testing.T) {
 			server := bootstrap.NewServerApp("../..")
 			route.InitAccountRouter(server.Engine.Group(""), accountService)
 
-			//body, err := json.Marshal(subTest.param)
-			//require.NoError(t, err)
-
-			url := fmt.Sprintf("/account/%d", account.ID)
+			url := fmt.Sprintf("/accounts/%d", subTest.param)
 			request, err := http.NewRequest("GET", url, nil)
 			require.NoError(t, err)
 			responseRecorder := httptest.NewRecorder()
@@ -163,6 +181,67 @@ func TestGetAccountAPI(t *testing.T) {
 			subTest.checkResponse(t, responseRecorder)
 		})
 
+	}
+}
+
+func TestTranserMoneyAPI(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	account := randomAccount()
+	account.CreatedAt = pgtype.Timestamptz{}
+
+	entry := randomEntry()
+	entry.CreatedAt = pgtype.Timestamptz{}
+
+	entry.AccountID = account.ID
+	amount := util.RandomInt(-100, 100)
+	transferResultDto := randomTransferResultDto(account, entry, amount)
+
+	accountService := mock_service.NewMockIAccountService(ctrl)
+
+	testCases := []struct {
+		name          string
+		param         apimodels.TransferMoneyRequest
+		buildStubs    func(accService *mock_service.MockIAccountService)
+		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
+	}{
+		{
+			name: "Success Transfer",
+			param: apimodels.TransferMoneyRequest{
+				AccountID: account.ID,
+				Amount:    amount,
+				EntryType: string(entry.Type),
+			},
+			buildStubs: func(accService *mock_service.MockIAccountService) {
+				accService.EXPECT().TransferMoney(gomock.Any(), dtos.TransferMoneyTxParam{
+					AccountID: account.ID,
+					Amount:    amount,
+					EntryType: "IT",
+				}).Times(1).Return(transferResultDto, nil)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+				requireBodyMatchAccountTranserResult(t, recorder.Body, transferResultDto)
+			},
+		},
+	}
+
+	for i := range testCases {
+		subTest := testCases[i]
+		t.Run(subTest.name, func(t *testing.T) {
+			subTest.buildStubs(accountService)
+
+			server := bootstrap.NewServerApp("../..")
+			route.InitAccountRouter(server.Engine.Group(""), accountService)
+			body, err := json.Marshal(subTest.param)
+			require.NoError(t, err)
+
+			request, err := http.NewRequest("PUT", "/account-transfer", bytes.NewBuffer(body))
+			require.NoError(t, err)
+			recorder := httptest.NewRecorder()
+			server.Engine.ServeHTTP(recorder, request)
+
+			subTest.checkResponse(t, recorder)
+		})
 	}
 }
 
@@ -180,6 +259,28 @@ func randomAccount() db.Account {
 	}
 }
 
+func randomEntry() db.Entry {
+	return db.Entry{
+		ID:        util.RandomInt(1, 100),
+		AccountID: util.RandomInt(1, 200),
+		Amount:    util.RandomInt(-100, 100),
+		CreatedAt: pgtype.Timestamptz{
+			Time:  time.Now(),
+			Valid: true,
+		},
+		Type: db.EntryType(util.RandomEntryType()),
+	}
+}
+
+func randomTransferResultDto(acc db.Account, entry db.Entry, amount int64) dtos.TransferMoneyTxResult {
+	acc.Balance += amount
+	entry.Amount = amount
+	return dtos.TransferMoneyTxResult{
+		UpdatedAccount: acc,
+		Entry:          entry,
+	}
+}
+
 func requireBodyMatchAccount(t *testing.T, body *bytes.Buffer, account db.Account) {
 	data, err := io.ReadAll(body)
 	require.NoError(t, err)
@@ -189,4 +290,17 @@ func requireBodyMatchAccount(t *testing.T, body *bytes.Buffer, account db.Accoun
 	require.NoError(t, err)
 
 	require.Equal(t, account, gotAccount)
+}
+
+func requireBodyMatchAccountTranserResult(t *testing.T, body *bytes.Buffer, transferResult dtos.TransferMoneyTxResult) {
+	data, err := io.ReadAll(body)
+	require.NoError(t, err)
+	transferRes := dtos.TransferMoneyTxResult{}
+
+	err = json.Unmarshal(data, &transferRes)
+	require.NoError(t, err)
+
+	require.Equal(t, transferRes.Entry.AccountID, transferRes.UpdatedAccount.ID)
+	require.Equal(t, transferResult.UpdatedAccount, transferRes.UpdatedAccount)
+	require.Equal(t, transferResult.Entry, transferRes.Entry)
 }
