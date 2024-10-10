@@ -13,4 +13,5 @@ func InitAccountRouter(routerGroup *gin.RouterGroup, accountService domain.IAcco
 	}
 
 	routerGroup.POST("/account", accountController.CreateNewAccount)
+	routerGroup.GET("/account/:id", accountController.GetAccountById)
 }

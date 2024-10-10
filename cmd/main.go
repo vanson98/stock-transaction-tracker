@@ -4,7 +4,6 @@ import (
 	"stt/api/route"
 	"stt/bootstrap"
 	db "stt/database/postgres/sqlc"
-	"stt/services"
 	"time"
 )
 
@@ -16,10 +15,7 @@ func main() {
 	dbStore := db.NewStore(app.PostgresConnectionPool)
 	timeout := time.Duration(app.Env.ContextTimeout) * time.Second
 
-	accountService := services.InitAccountService(dbStore, timeout)
-
-	protectedRouterGroup := app.Engine.Group("")
-	route.InitAccountRouter(protectedRouterGroup, accountService)
+	route.Setup(app.Env, timeout, dbStore, app.Engine)
 
 	app.Engine.Run(app.Env.ServerAddress)
 

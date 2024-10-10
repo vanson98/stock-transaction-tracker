@@ -33,3 +33,15 @@ func (ac *AccountController) CreateNewAccount(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, account)
 }
+
+func (ac *AccountController) GetAccountById(ctx *gin.Context) {
+	requestParam := apimodels.GetAccountRequest{}
+	ctx.BindUri(&requestParam)
+
+	account, err := ac.AccountService.GetById(ctx, requestParam.Id)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+	ctx.JSON(http.StatusOK, account)
+}

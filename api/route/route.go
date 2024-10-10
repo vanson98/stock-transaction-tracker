@@ -1,20 +1,23 @@
 package route
 
-// import (
-// 	"stt/bootstrap"
-// 	db "stt/database/postgres/sqlc"
-// 	"time"
+import (
+	"stt/bootstrap"
+	db "stt/database/postgres/sqlc"
+	"stt/services"
+	"time"
 
-// 	"github.com/gin-gonic/gin"
-// )
+	"github.com/gin-gonic/gin"
+)
 
-// func Setup(env *bootstrap.Env, timeout time.Duration, store db.IStore, gin *gin.Engine) {
-// 	//publicRouter := gin.Group("")
+func Setup(env *bootstrap.Env, timeout time.Duration, store db.IStore, gin *gin.Engine) {
+	//publicRouter := gin.Group("")
 
-// 	// All protected APIs
-// 	protectedRouter := gin.Group("")
+	accountService := services.InitAccountService(store, timeout)
+	investmentService := services.InitInvestmentService(store, timeout)
+	// All protected APIs
+	protectedRouter := gin.Group("")
 
-// 	NewInvestmentRouter(env, timeout, store, protectedRouter)
-// 	NewAccountRouter(store, timeout, protectedRouter)
+	InitInvestmentRouter(protectedRouter, &investmentService)
+	InitAccountRouter(protectedRouter, accountService)
 
-// }
+}

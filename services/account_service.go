@@ -26,6 +26,11 @@ func (as accountService) CreateNew(ctx context.Context, param db.CreateAccountPa
 	return as.store.CreateAccount(ctx, param)
 }
 
+// GetById implements domain.IAccountService.
+func (as accountService) GetById(ctx context.Context, id int64) (db.Account, error) {
+	return as.store.GetAccountById(ctx, id)
+}
+
 // GetAllPaging implements domain.IAccountService.
 func (as accountService) GetAllPaging(ctx context.Context, param db.ListAccountsParams) ([]db.Account, error) {
 	return as.store.ListAccounts(ctx, param)

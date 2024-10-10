@@ -12,8 +12,10 @@ migratedown:
 	migrate -path database/postgres/migration -database "postgresql://root:123456@localhost:5432/stock_tracker?sslmode=disable" -verbose down 1
 sqlc: 
 	sqlc generate
-test: 
+store_test: 
 	go test -v -cover ./database/postgres/sqlc
+controller_test: 
+	go test -coverpkg=./api/controller -v -cover ./api/test
 mock:
 	mockgen -package mock_service  -destination services/mock/service_mock.go stt/domain IAccountService,IInvestmentService
-.PHONY: sqlc runapp postgres createdb dropdb migrateup migratedown server mock
+.PHONY: sqlc runapp postgres createdb dropdb migrateup migratedown server mock store_test controller_test

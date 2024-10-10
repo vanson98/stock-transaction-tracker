@@ -38,6 +38,13 @@ func TestCreateAccount(t *testing.T) {
 	createRandomAccount(t)
 }
 
+func TestGetById(t *testing.T) {
+	acc := createRandomAccount(t)
+	getAcc, err := accService.GetById(context.Background(), acc.ID)
+	require.NoError(t, err)
+	require.Equal(t, acc, getAcc)
+}
+
 func TestListAccount(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		createRandomAccount(t)
