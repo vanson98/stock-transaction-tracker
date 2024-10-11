@@ -1,7 +1,8 @@
 package apimodels
 
 type TransferMoneyRequest struct {
-	AccountID int64  `json:"account"`
-	Amount    int64  `json:"amount"`
-	EntryType string `json:"entry_type"`
+	AccountID int64  `json:"accountId" binding:"required,min=1"`
+	Amount    int64  `json:"amount" binding:"required"`
+	EntryType string `json:"entryType" binding:"required,oneof=IT TM"`
+	Currency  string `json:"currency" binding:"required,currency"`
 }

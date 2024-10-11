@@ -59,9 +59,9 @@ func TestCreateAccountAPI(t *testing.T) {
 		{
 			name: "Bad Request",
 			params: apimodels.CreateAccountRequest{
-				ChannelName: "",
+				ChannelName: "TCB",
 				Owner:       account.Owner,
-				Currency:    account.Currency,
+				Currency:    "account.Currency",
 			},
 			buildStubs: func(accountService *mock_service.MockIAccountService) {
 				accountService.EXPECT().CreateNew(gomock.Any(), gomock.Any()).Times(0)
@@ -210,6 +210,7 @@ func TestTranserMoneyAPI(t *testing.T) {
 				AccountID: account.ID,
 				Amount:    amount,
 				EntryType: string(entry.Type),
+				Currency:  account.Currency,
 			},
 			buildStubs: func(accService *mock_service.MockIAccountService) {
 				accService.EXPECT().TransferMoney(gomock.Any(), dtos.TransferMoneyTxParam{
@@ -217,10 +218,27 @@ func TestTranserMoneyAPI(t *testing.T) {
 					Amount:    amount,
 					EntryType: "IT",
 				}).Times(1).Return(transferResultDto, nil)
+				accService.EXPECT().GetById(gomock.Any(), gomock.Eq(account.ID)).Times(1).Return(account, nil)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
 				requireBodyMatchAccountTranserResult(t, recorder.Body, transferResultDto)
+			},
+		},
+		{
+			name: "Bad request",
+			param: apimodels.TransferMoneyRequest{
+				AccountID: -2,
+				Amount:    amount,
+				EntryType: string(entry.Type),
+				Currency:  "TEST",
+			},
+			buildStubs: func(accService *mock_service.MockIAccountService) {
+				accService.EXPECT().TransferMoney(gomock.Any(), gomock.Any()).Times(0)
+				accService.EXPECT().GetById(gomock.Any(), gomock.Any()).Times(0)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 		},
 	}

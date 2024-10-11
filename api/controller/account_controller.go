@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"database/sql"
+	"fmt"
 	"net/http"
 	apimodels "stt/api/models"
 	db "stt/database/postgres/sqlc"
@@ -57,6 +59,11 @@ func (ac *AccountController) TransferMoney(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
+
+	if !ac.validAccount(ctx, transferRequest.AccountID, transferRequest.Currency) {
+		return
+	}
+
 	result, err := ac.AccountService.TransferMoney(ctx, dtos.TransferMoneyTxParam{
 		AccountID: transferRequest.AccountID,
 		Amount:    transferRequest.Amount,
@@ -69,6 +76,25 @@ func (ac *AccountController) TransferMoney(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, result)
+}
+
+func (ac *AccountController) validAccount(ctx *gin.Context, accountId int64, currency string) bool {
+	acc, err := ac.AccountService.GetById(ctx, accountId)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return false
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return false
+	}
+
+	if acc.Currency != currency {
+		err := fmt.Errorf("account [%d] currency mismatch: %s vs %s", acc.ID, acc.Currency, currency)
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return false
+	}
+	return true
 }
 
 func errorResponse(err error) gin.H {
