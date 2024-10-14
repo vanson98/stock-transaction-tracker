@@ -14,10 +14,11 @@ func Setup(env *bootstrap.Env, timeout time.Duration, store db.IStore, gin *gin.
 
 	accountService := services.InitAccountService(store, timeout)
 	investmentService := services.InitInvestmentService(store, timeout)
+	userService := services.InitUserService(store)
 	// All protected APIs
 	protectedRouter := gin.Group("")
 
 	InitInvestmentRouter(protectedRouter, &investmentService)
 	InitAccountRouter(protectedRouter, accountService)
-
+	InitUserRouter(protectedRouter, userService)
 }

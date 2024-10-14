@@ -35,5 +35,5 @@ controller_test:
 	go test -coverpkg=./api/controller -v -cover ./api/test
 
 mock:
-	mockgen -package mock_service  -destination services/mock/service_mock.go stt/domain IAccountService,IInvestmentService
+	mockgen -package mock_service  -destination services/mock/service_mock.go stt/services/interfaces IAccountService,IInvestmentService,IUserService
 .PHONY: sqlc runapp postgres createdb dropdb migrateup migratedown server mock store_test controller_test
