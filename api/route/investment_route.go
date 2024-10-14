@@ -1,12 +1,12 @@
 package route
 
 import (
-	"stt/domain"
+	sv_interface "stt/services/interfaces"
 
 	"github.com/gin-gonic/gin"
 )
 
-func InitInvestmentRouter(group *gin.RouterGroup, investmentService *domain.IInvestmentService) {
+func InitInvestmentRouter(group *gin.RouterGroup, investmentService *sv_interface.IInvestmentService) {
 	// ic := controller.InvestmentController{
 	// 	InvestmentService: *investmentService,
 	// }

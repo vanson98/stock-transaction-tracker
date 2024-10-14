@@ -1,11 +1,11 @@
 package controller
 
 import (
-	"stt/domain"
+	sv_interface "stt/services/interfaces"
 )
 
 type InvestmentController struct {
-	InvestmentService domain.IInvestmentService
+	InvestmentService sv_interface.IInvestmentService
 }
 
 // func (ic *InvestmentController) GetAll(c *gin.Context) {

@@ -6,14 +6,14 @@ import (
 	"net/http"
 	apimodels "stt/api/models"
 	db "stt/database/postgres/sqlc"
-	"stt/domain"
 	"stt/services/dtos"
+	sv_interface "stt/services/interfaces"
 
 	"github.com/gin-gonic/gin"
 )
 
 type AccountController struct {
-	AccountService domain.IAccountService
+	AccountService sv_interface.IAccountService
 }
 
 func (ac *AccountController) CreateNewAccount(ctx *gin.Context) {

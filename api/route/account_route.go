@@ -2,12 +2,12 @@ package route
 
 import (
 	"stt/api/controller"
-	"stt/domain"
+	sv_interface "stt/services/interfaces"
 
 	"github.com/gin-gonic/gin"
 )
 
-func InitAccountRouter(routerGroup *gin.RouterGroup, accountService domain.IAccountService) {
+func InitAccountRouter(routerGroup *gin.RouterGroup, accountService sv_interface.IAccountService) {
 	accountController := controller.AccountController{
 		AccountService: accountService,
 	}
