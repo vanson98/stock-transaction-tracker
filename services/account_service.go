@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 	db "stt/database/postgres/sqlc"
-	"stt/domain"
+
 	"stt/services/dtos"
+	sv_interface "stt/services/interfaces"
 	"time"
 )
 
@@ -14,42 +15,42 @@ type accountService struct {
 	timeout time.Duration
 }
 
-func InitAccountService(store db.IStore, timeout time.Duration) domain.IAccountService {
+func InitAccountService(store db.IStore, timeout time.Duration) sv_interface.IAccountService {
 	return accountService{
 		store:   store,
 		timeout: timeout,
 	}
 }
 
-// CreateNew implements domain.IAccountService.
+// CreateNew implements sv_interface.IAccountService.
 func (as accountService) CreateNew(ctx context.Context, param db.CreateAccountParams) (db.Account, error) {
 	return as.store.CreateAccount(ctx, param)
 }
 
-// GetById implements domain.IAccountService.
+// GetById implements sv_interface.IAccountService.
 func (as accountService) GetById(ctx context.Context, id int64) (db.Account, error) {
 	return as.store.GetAccountById(ctx, id)
 }
 
-// GetAllPaging implements domain.IAccountService.
+// GetAllPaging implements sv_interface.IAccountService.
 func (as accountService) GetAllPaging(ctx context.Context, param db.ListAccountsParams) ([]db.Account, error) {
 	return as.store.ListAccounts(ctx, param)
 }
 
-// UpdateBalance implements domain.IAccountService.
+// UpdateBalance implements sv_interface.IAccountService.
 func (as accountService) UpdateBalance(ctx context.Context, param db.AddAccountBalanceParams) (db.Account, error) {
 	return as.store.AddAccountBalance(ctx, param)
 }
 
-var txKey = struct{}{}
+var TxKey = struct{}{}
 
-// TransferMoney implements domain.IAccountService.
+// TransferMoney implements sv_interface.IAccountService.
 func (as accountService) TransferMoney(ctx context.Context, arg dtos.TransferMoneyTxParam) (dtos.TransferMoneyTxResult, error) {
 	var result dtos.TransferMoneyTxResult
 
 	err := as.store.ExecTx(ctx, func(q *db.Queries) error {
 		var err error
-		txName := ctx.Value(txKey)
+		txName := ctx.Value(TxKey)
 
 		// create a entry
 		fmt.Println(txName, "create a entry")
@@ -84,7 +85,7 @@ func (as accountService) TransferMoney(ctx context.Context, arg dtos.TransferMon
 	return result, err
 }
 
-// Delete implements domain.IAccountService.
+// Delete implements sv_interface.IAccountService.
 func (as accountService) Delete(ctx context.Context, accountId int64) error {
 	return as.store.DeleteAccount(ctx, accountId)
 }

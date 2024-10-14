@@ -1,4 +1,4 @@
-package domain
+package sv_interface
 
 import (
 	"context"

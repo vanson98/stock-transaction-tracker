@@ -141,3 +141,12 @@ type Transaction struct {
 	Type      string             `json:"type"`
 	Fee       int64              `json:"fee"`
 }
+
+type User struct {
+	Username          string             `json:"username"`
+	HashedPassword    string             `json:"hashed_password"`
+	FullName          string             `json:"full_name"`
+	Email             string             `json:"email"`
+	PasswordChangedAt pgtype.Timestamptz `json:"password_changed_at"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+}

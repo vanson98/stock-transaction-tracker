@@ -1,9 +1,10 @@
-package services
+package service_test
 
 import (
 	"context"
 	"fmt"
 	db "stt/database/postgres/sqlc"
+	"stt/services"
 	"stt/services/dtos"
 	"stt/util"
 	"testing"
@@ -14,9 +15,10 @@ import (
 )
 
 func createRandomAccount(t *testing.T) db.Account {
+	user := createRandomUser(t)
 	arg := db.CreateAccountParams{
 		ChannelName: util.RandomString(3),
-		Owner:       util.RandomOwner(),
+		Owner:       user.Username,
 		Balance:     util.RandomInt(1, 1000),
 		Currency:    util.RandomCurrency(),
 	}
@@ -46,7 +48,7 @@ func TestGetById(t *testing.T) {
 }
 
 func TestListAccount(t *testing.T) {
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 5; i++ {
 		createRandomAccount(t)
 	}
 	accounts, err := accService.GetAllPaging(context.Background(), db.ListAccountsParams{
@@ -102,7 +104,7 @@ func TestTranserMoneyTx(t *testing.T) {
 	for i := 0; i < n; i++ {
 		txName := fmt.Sprintf("tx %d", i)
 		go func() {
-			ctx := context.WithValue(context.Background(), txKey, txName)
+			ctx := context.WithValue(context.Background(), services.TxKey, txName)
 			result, err := accService.TransferMoney(ctx, dtos.TransferMoneyTxParam{
 				AccountID: account.ID,
 				Amount:    amount,

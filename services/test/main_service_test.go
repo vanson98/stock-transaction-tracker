@@ -1,10 +1,11 @@
-package services
+package service_test
 
 import (
 	"os"
 	"stt/bootstrap"
 	db "stt/database/postgres/sqlc"
-	"stt/domain"
+	"stt/services"
+	sv_interface "stt/services/interfaces"
 	"testing"
 	"time"
 
@@ -13,15 +14,17 @@ import (
 
 var pgConnPool *pgxpool.Pool
 var store db.IStore
-var accService domain.IAccountService
+var accService sv_interface.IAccountService
+var userService sv_interface.IUserService
 
 func TestMain(m *testing.M) {
 	var timeout time.Duration = 3
-	env := bootstrap.NewEnv("..")
+	env := bootstrap.NewEnv("../..")
 	pgConnPool = bootstrap.NewPostgresConnectionPool(env)
 	defer bootstrap.ClosePostgresDbConnectionPool(pgConnPool)
 
 	store = db.NewStore(pgConnPool)
-	accService = InitAccountService(store, timeout)
+	accService = services.InitAccountService(store, timeout)
+	userService = services.InitUserService(store)
 	os.Exit(m.Run())
 }

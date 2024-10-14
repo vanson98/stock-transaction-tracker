@@ -3,7 +3,7 @@ package services
 import (
 	"context"
 	db "stt/database/postgres/sqlc"
-	"stt/domain"
+	sv_interface "stt/services/interfaces"
 	"time"
 )
 
@@ -12,7 +12,7 @@ type investmentService struct {
 	contextTimeout time.Duration
 }
 
-func InitInvestmentService(store db.IStore, timeout time.Duration) domain.IInvestmentService {
+func InitInvestmentService(store db.IStore, timeout time.Duration) sv_interface.IInvestmentService {
 	return investmentService{
 		store:          store,
 		contextTimeout: timeout,
