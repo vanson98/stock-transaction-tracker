@@ -10,6 +10,7 @@ import (
 	sv_interface "stt/services/interfaces"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type AccountController struct {
@@ -30,6 +31,13 @@ func (ac *AccountController) CreateNewAccount(ctx *gin.Context) {
 	})
 
 	if err != nil {
+		if pgErr, ok := err.(*pgconn.PgError); ok {
+			switch pgErr.Code {
+			case "23505", "23503":
+				ctx.JSON(http.StatusForbidden, errorResponse(pgErr))
+				return
+			}
+		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
