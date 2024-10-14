@@ -7,5 +7,5 @@ import (
 
 type IUserService interface {
 	CreateNew(ctx context.Context, param db.CreateUserParams) (db.User, error)
-	GetByUserName(ctx context.Context, username string) db.User
+	GetByUserName(ctx context.Context, username string) (db.User, error)
 }

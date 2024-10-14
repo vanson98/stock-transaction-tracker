@@ -25,11 +25,24 @@ func createRandomUser(t *testing.T) db.User {
 	require.NotEmpty(t, arg.HashedPassword, user.HashedPassword)
 	require.NotEmpty(t, arg.Email, user.Email)
 
-	//require.Equal(t, pgtype.Timestamptz{}, user.PasswordChangedAt)
+	require.True(t, user.PasswordChangedAt.Time.IsZero())
 	require.NotZero(t, user.CreatedAt)
 	return user
 }
 
 func TestCreateUser(t *testing.T) {
 	createRandomUser(t)
+}
+
+func TestGetUser(t *testing.T) {
+	newuser := createRandomUser(t)
+	user, err := userService.GetByUserName(context.Background(), newuser.Username)
+	require.NoError(t, err)
+	require.NotEmpty(t, user)
+	require.Equal(t, newuser.Username, user.Username)
+	require.Equal(t, newuser.Email, user.Email)
+	require.Equal(t, newuser.FullName, user.FullName)
+	require.Equal(t, newuser.HashedPassword, user.HashedPassword)
+	require.Equal(t, newuser.PasswordChangedAt, user.PasswordChangedAt)
+	require.Equal(t, newuser.CreatedAt, user.CreatedAt)
 }

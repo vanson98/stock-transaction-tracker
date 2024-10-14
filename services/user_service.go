@@ -22,6 +22,6 @@ func (us userService) CreateNew(ctx context.Context, param db.CreateUserParams) 
 }
 
 // GetByUserName implements sv_interface.IUserService.
-func (us userService) GetByUserName(ctx context.Context, username string) db.User {
-	panic("unimplemented")
+func (us userService) GetByUserName(ctx context.Context, username string) (db.User, error) {
+	return us.store.GetUser(ctx, username)
 }
