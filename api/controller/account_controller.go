@@ -61,6 +61,15 @@ func (ac *AccountController) GetAccountById(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, account)
 }
 
+func (ac *AccountController) GetAllAccount(ctx *gin.Context) {
+	accounts, err := ac.AccountService.ListAllAccount(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+	ctx.JSON(http.StatusOK, accounts)
+}
+
 func (ac *AccountController) TransferMoney(ctx *gin.Context) {
 	transferRequest := apimodels.TransferMoneyRequest{}
 	if err := ctx.ShouldBindBodyWithJSON(&transferRequest); err != nil {

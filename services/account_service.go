@@ -27,14 +27,19 @@ func (as accountService) CreateNew(ctx context.Context, param db.CreateAccountPa
 	return as.store.CreateAccount(ctx, param)
 }
 
+// ListAllAccount implements sv_interface.IAccountService.
+func (as accountService) ListAllAccount(ctx context.Context) ([]string, error) {
+	return as.store.ListAllAccount(ctx)
+}
+
 // GetById implements sv_interface.IAccountService.
 func (as accountService) GetById(ctx context.Context, id int64) (db.Account, error) {
 	return as.store.GetAccountById(ctx, id)
 }
 
 // GetAllPaging implements sv_interface.IAccountService.
-func (as accountService) GetAllPaging(ctx context.Context, param db.ListAccountsParams) ([]db.Account, error) {
-	return as.store.ListAccounts(ctx, param)
+func (as accountService) GetAllPaging(ctx context.Context, param db.GetAccountsPagingParams) ([]db.Account, error) {
+	return as.store.GetAccountsPaging(ctx, param)
 }
 
 // UpdateBalance implements sv_interface.IAccountService.

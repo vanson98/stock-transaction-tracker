@@ -3,7 +3,7 @@ INSERT INTO accounts(channel_name,"owner",balance,currency)
 VALUES($1,$2,$3,$4)
 RETURNING *;
 
--- name: ListAccounts :many
+-- name: GetAccountsPaging :many
 SELECT * FROM accounts
 OFFSET $1 LIMIT $2;
 
@@ -22,7 +22,9 @@ SET balance = balance + sqlc.arg(amount)
 WHERE id = sqlc.arg(id)
 RETURNING *;
 
-
 -- name: DeleteAccount :exec
 DELETE FROM accounts
 WHERE id=$1;
+
+-- name: ListAllAccount :many
+select channel_name from accounts;

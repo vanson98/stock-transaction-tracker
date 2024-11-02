@@ -1,15 +1,15 @@
 -- name: CreateInvestment :one
-INSERT INTO investments (account_id,stock_code,company_name,total_money_buy,capital_cost,market_price,total_sell_amount,total_money_sell,current_volume,"description","status")
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+insert into investments(account_id,ticker,company_name,buy_volume,buy_value,capital_cost,market_price,sell_volume,sell_value,current_volume,description,status,fee,tax)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 RETURNING *;
 
 -- name: GetAllInvestment :many
 SELECT * from investments
-ORDER BY stock_code;
+ORDER BY ticker;
 
--- name: GetInvestmentByCode :one
+-- name: GetInvestmentByTicker :one
 SELECT * from investments
-where stock_code=$1;
+where ticker=$1;
 
 -- name: GetInvestmentByAccountId :many
 select * from investments

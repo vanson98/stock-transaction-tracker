@@ -96,6 +96,90 @@ func (ns NullInvestmentStatus) Value() (driver.Value, error) {
 	return string(ns.InvestmentStatus), nil
 }
 
+type TradeType string
+
+const (
+	TradeTypeSELL TradeType = "SELL"
+	TradeTypeBUY  TradeType = "BUY"
+)
+
+func (e *TradeType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = TradeType(s)
+	case string:
+		*e = TradeType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for TradeType: %T", src)
+	}
+	return nil
+}
+
+type NullTradeType struct {
+	TradeType TradeType `json:"trade_type"`
+	Valid     bool      `json:"valid"` // Valid is true if TradeType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullTradeType) Scan(value interface{}) error {
+	if value == nil {
+		ns.TradeType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.TradeType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullTradeType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.TradeType), nil
+}
+
+type TransactionStatus string
+
+const (
+	TransactionStatusCOMPLETED   TransactionStatus = "COMPLETED"
+	TransactionStatusINCOMPLETED TransactionStatus = "INCOMPLETED"
+)
+
+func (e *TransactionStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = TransactionStatus(s)
+	case string:
+		*e = TransactionStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for TransactionStatus: %T", src)
+	}
+	return nil
+}
+
+type NullTransactionStatus struct {
+	TransactionStatus TransactionStatus `json:"transaction_status"`
+	Valid             bool              `json:"valid"` // Valid is true if TransactionStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullTransactionStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.TransactionStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.TransactionStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullTransactionStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.TransactionStatus), nil
+}
+
 type Account struct {
 	ID          int64              `json:"id"`
 	ChannelName string             `json:"channel_name"`
@@ -115,31 +199,41 @@ type Entry struct {
 }
 
 type Investment struct {
-	ID              int64            `json:"id"`
-	AccountID       int64            `json:"account_id"`
-	StockCode       string           `json:"stock_code"`
-	CompanyName     pgtype.Text      `json:"company_name"`
-	TotalBuyAmount  int32            `json:"total_buy_amount"`
-	TotalMoneyBuy   int64            `json:"total_money_buy"`
-	CapitalCost     int64            `json:"capital_cost"`
-	MarketPrice     int64            `json:"market_price"`
-	TotalSellAmount int32            `json:"total_sell_amount"`
-	TotalMoneySell  int64            `json:"total_money_sell"`
-	CurrentVolume   int32            `json:"current_volume"`
-	Description     pgtype.Text      `json:"description"`
-	Status          InvestmentStatus `json:"status"`
+	ID            int64            `json:"id"`
+	AccountID     int64            `json:"account_id"`
+	Ticker        string           `json:"ticker"`
+	CompanyName   pgtype.Text      `json:"company_name"`
+	BuyVolume     int32            `json:"buy_volume"`
+	BuyValue      int64            `json:"buy_value"`
+	CapitalCost   int64            `json:"capital_cost"`
+	MarketPrice   int64            `json:"market_price"`
+	SellVolume    int32            `json:"sell_volume"`
+	SellValue     int64            `json:"sell_value"`
+	CurrentVolume int32            `json:"current_volume"`
+	Description   pgtype.Text      `json:"description"`
+	Status        InvestmentStatus `json:"status"`
+	Fee           int32            `json:"fee"`
+	Tax           int32            `json:"tax"`
+	UpdatedDate   pgtype.Timestamp `json:"updated_date"`
 }
 
 type Transaction struct {
-	ID           int64 `json:"id"`
-	InvestmentID int64 `json:"investment_id"`
-	CapitalCost  int64 `json:"capital_cost"`
-	Price        int64 `json:"price"`
-	// must be possitive
-	Amount    int32              `json:"amount"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	Type      string             `json:"type"`
-	Fee       int64              `json:"fee"`
+	ID              int64             `json:"id"`
+	InvestmentID    int64             `json:"investment_id"`
+	Ticker          string            `json:"ticker"`
+	TradingDate     pgtype.Timestamp  `json:"trading_date"`
+	Trade           TradeType         `json:"trade"`
+	Volume          int32             `json:"volume"`
+	OrderPrice      int64             `json:"order_price"`
+	MatchVolume     int32             `json:"match_volume"`
+	MatchPrice      int64             `json:"match_price"`
+	MatchValue      int64             `json:"match_value"`
+	Fee             int32             `json:"fee"`
+	Tax             int32             `json:"tax"`
+	Cost            int64             `json:"cost"`
+	CostOfGoodsSold int64             `json:"cost_of_goods_sold"`
+	Return          int64             `json:"return"`
+	Status          TransactionStatus `json:"status"`
 }
 
 type User struct {

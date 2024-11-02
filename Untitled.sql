@@ -18,6 +18,7 @@ ALTER TABLE investments RENAME COLUMN total_sell_amount TO sell_volume;
 ALTER TABLE investments RENAME COLUMN total_money_sell TO sell_value;
 ALTER TABLE investments ADD COLUMN fee INT NOT NULL;
 ALTER TABLE investments ADD COLUMN tax INT NOT NULL;
+ALTER TABLE investments ADD COLUMN updated_date TIMESTAMP;
 ===============================================
 
 ALTER TABLE investments RENAME COLUMN ticker  TO stock_code;
@@ -27,4 +28,8 @@ ALTER TABLE investments RENAME COLUMN sell_volume  TO total_sell_amount;
 ALTER TABLE investments RENAME COLUMN sell_value  TO total_money_sell;
 ALTER TABLE investments DROP COLUMN fee;
 ALTER TABLE investments DROP COLUMN tax;
+ALTER TABLE investments DROP COLUMN updated_date;
 
+insert into investments()
+select a.channel_name from accounts as a
+where a.

@@ -116,18 +116,18 @@ func (q *Queries) GetAccountForUpdate(ctx context.Context, id int64) (Account, e
 	return i, err
 }
 
-const listAccounts = `-- name: ListAccounts :many
+const getAccountsPaging = `-- name: GetAccountsPaging :many
 SELECT id, channel_name, owner, balance, currency, created_at FROM accounts
 OFFSET $1 LIMIT $2
 `
 
-type ListAccountsParams struct {
+type GetAccountsPagingParams struct {
 	Offset int32 `json:"offset"`
 	Limit  int32 `json:"limit"`
 }
 
-func (q *Queries) ListAccounts(ctx context.Context, arg ListAccountsParams) ([]Account, error) {
-	rows, err := q.db.Query(ctx, listAccounts, arg.Offset, arg.Limit)
+func (q *Queries) GetAccountsPaging(ctx context.Context, arg GetAccountsPagingParams) ([]Account, error) {
+	rows, err := q.db.Query(ctx, getAccountsPaging, arg.Offset, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -146,6 +146,30 @@ func (q *Queries) ListAccounts(ctx context.Context, arg ListAccountsParams) ([]A
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAllAccount = `-- name: ListAllAccount :many
+select channel_name from accounts
+`
+
+func (q *Queries) ListAllAccount(ctx context.Context) ([]string, error) {
+	rows, err := q.db.Query(ctx, listAllAccount)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var channel_name string
+		if err := rows.Scan(&channel_name); err != nil {
+			return nil, err
+		}
+		items = append(items, channel_name)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

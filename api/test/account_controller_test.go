@@ -118,7 +118,7 @@ func TestCreateAccountAPI(t *testing.T) {
 	}
 }
 
-func TestGetAccountAPI(t *testing.T) {
+func TestGetAccountByIdAPI(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	accountService := mock_service.NewMockIAccountService(ctrl)
 	account := randomAccount()

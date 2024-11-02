@@ -12,61 +12,70 @@ import (
 )
 
 const createInvestment = `-- name: CreateInvestment :one
-INSERT INTO investments (account_id,stock_code,company_name,total_money_buy,capital_cost,market_price,total_sell_amount,total_money_sell,current_volume,"description","status")
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-RETURNING id, account_id, stock_code, company_name, total_buy_amount, total_money_buy, capital_cost, market_price, total_sell_amount, total_money_sell, current_volume, description, status
+insert into investments(account_id,ticker,company_name,buy_volume,buy_value,capital_cost,market_price,sell_volume,sell_value,current_volume,description,status,fee,tax)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+RETURNING id, account_id, ticker, company_name, buy_volume, buy_value, capital_cost, market_price, sell_volume, sell_value, current_volume, description, status, fee, tax, updated_date
 `
 
 type CreateInvestmentParams struct {
-	AccountID       int64            `json:"account_id"`
-	StockCode       string           `json:"stock_code"`
-	CompanyName     pgtype.Text      `json:"company_name"`
-	TotalMoneyBuy   int64            `json:"total_money_buy"`
-	CapitalCost     int64            `json:"capital_cost"`
-	MarketPrice     int64            `json:"market_price"`
-	TotalSellAmount int32            `json:"total_sell_amount"`
-	TotalMoneySell  int64            `json:"total_money_sell"`
-	CurrentVolume   int32            `json:"current_volume"`
-	Description     pgtype.Text      `json:"description"`
-	Status          InvestmentStatus `json:"status"`
+	AccountID     int64            `json:"account_id"`
+	Ticker        string           `json:"ticker"`
+	CompanyName   pgtype.Text      `json:"company_name"`
+	BuyVolume     int32            `json:"buy_volume"`
+	BuyValue      int64            `json:"buy_value"`
+	CapitalCost   int64            `json:"capital_cost"`
+	MarketPrice   int64            `json:"market_price"`
+	SellVolume    int32            `json:"sell_volume"`
+	SellValue     int64            `json:"sell_value"`
+	CurrentVolume int32            `json:"current_volume"`
+	Description   pgtype.Text      `json:"description"`
+	Status        InvestmentStatus `json:"status"`
+	Fee           int32            `json:"fee"`
+	Tax           int32            `json:"tax"`
 }
 
 func (q *Queries) CreateInvestment(ctx context.Context, arg CreateInvestmentParams) (Investment, error) {
 	row := q.db.QueryRow(ctx, createInvestment,
 		arg.AccountID,
-		arg.StockCode,
+		arg.Ticker,
 		arg.CompanyName,
-		arg.TotalMoneyBuy,
+		arg.BuyVolume,
+		arg.BuyValue,
 		arg.CapitalCost,
 		arg.MarketPrice,
-		arg.TotalSellAmount,
-		arg.TotalMoneySell,
+		arg.SellVolume,
+		arg.SellValue,
 		arg.CurrentVolume,
 		arg.Description,
 		arg.Status,
+		arg.Fee,
+		arg.Tax,
 	)
 	var i Investment
 	err := row.Scan(
 		&i.ID,
 		&i.AccountID,
-		&i.StockCode,
+		&i.Ticker,
 		&i.CompanyName,
-		&i.TotalBuyAmount,
-		&i.TotalMoneyBuy,
+		&i.BuyVolume,
+		&i.BuyValue,
 		&i.CapitalCost,
 		&i.MarketPrice,
-		&i.TotalSellAmount,
-		&i.TotalMoneySell,
+		&i.SellVolume,
+		&i.SellValue,
 		&i.CurrentVolume,
 		&i.Description,
 		&i.Status,
+		&i.Fee,
+		&i.Tax,
+		&i.UpdatedDate,
 	)
 	return i, err
 }
 
 const getAllInvestment = `-- name: GetAllInvestment :many
-SELECT id, account_id, stock_code, company_name, total_buy_amount, total_money_buy, capital_cost, market_price, total_sell_amount, total_money_sell, current_volume, description, status from investments
-ORDER BY stock_code
+SELECT id, account_id, ticker, company_name, buy_volume, buy_value, capital_cost, market_price, sell_volume, sell_value, current_volume, description, status, fee, tax, updated_date from investments
+ORDER BY ticker
 `
 
 func (q *Queries) GetAllInvestment(ctx context.Context) ([]Investment, error) {
@@ -81,17 +90,20 @@ func (q *Queries) GetAllInvestment(ctx context.Context) ([]Investment, error) {
 		if err := rows.Scan(
 			&i.ID,
 			&i.AccountID,
-			&i.StockCode,
+			&i.Ticker,
 			&i.CompanyName,
-			&i.TotalBuyAmount,
-			&i.TotalMoneyBuy,
+			&i.BuyVolume,
+			&i.BuyValue,
 			&i.CapitalCost,
 			&i.MarketPrice,
-			&i.TotalSellAmount,
-			&i.TotalMoneySell,
+			&i.SellVolume,
+			&i.SellValue,
 			&i.CurrentVolume,
 			&i.Description,
 			&i.Status,
+			&i.Fee,
+			&i.Tax,
+			&i.UpdatedDate,
 		); err != nil {
 			return nil, err
 		}
@@ -104,7 +116,7 @@ func (q *Queries) GetAllInvestment(ctx context.Context) ([]Investment, error) {
 }
 
 const getInvestmentByAccountId = `-- name: GetInvestmentByAccountId :many
-select id, account_id, stock_code, company_name, total_buy_amount, total_money_buy, capital_cost, market_price, total_sell_amount, total_money_sell, current_volume, description, status from investments
+select id, account_id, ticker, company_name, buy_volume, buy_value, capital_cost, market_price, sell_volume, sell_value, current_volume, description, status, fee, tax, updated_date from investments
 where account_id=$1
 `
 
@@ -120,17 +132,20 @@ func (q *Queries) GetInvestmentByAccountId(ctx context.Context, accountID int64)
 		if err := rows.Scan(
 			&i.ID,
 			&i.AccountID,
-			&i.StockCode,
+			&i.Ticker,
 			&i.CompanyName,
-			&i.TotalBuyAmount,
-			&i.TotalMoneyBuy,
+			&i.BuyVolume,
+			&i.BuyValue,
 			&i.CapitalCost,
 			&i.MarketPrice,
-			&i.TotalSellAmount,
-			&i.TotalMoneySell,
+			&i.SellVolume,
+			&i.SellValue,
 			&i.CurrentVolume,
 			&i.Description,
 			&i.Status,
+			&i.Fee,
+			&i.Tax,
+			&i.UpdatedDate,
 		); err != nil {
 			return nil, err
 		}
@@ -142,28 +157,31 @@ func (q *Queries) GetInvestmentByAccountId(ctx context.Context, accountID int64)
 	return items, nil
 }
 
-const getInvestmentByCode = `-- name: GetInvestmentByCode :one
-SELECT id, account_id, stock_code, company_name, total_buy_amount, total_money_buy, capital_cost, market_price, total_sell_amount, total_money_sell, current_volume, description, status from investments
-where stock_code=$1
+const getInvestmentByTicker = `-- name: GetInvestmentByTicker :one
+SELECT id, account_id, ticker, company_name, buy_volume, buy_value, capital_cost, market_price, sell_volume, sell_value, current_volume, description, status, fee, tax, updated_date from investments
+where ticker=$1
 `
 
-func (q *Queries) GetInvestmentByCode(ctx context.Context, stockCode string) (Investment, error) {
-	row := q.db.QueryRow(ctx, getInvestmentByCode, stockCode)
+func (q *Queries) GetInvestmentByTicker(ctx context.Context, ticker string) (Investment, error) {
+	row := q.db.QueryRow(ctx, getInvestmentByTicker, ticker)
 	var i Investment
 	err := row.Scan(
 		&i.ID,
 		&i.AccountID,
-		&i.StockCode,
+		&i.Ticker,
 		&i.CompanyName,
-		&i.TotalBuyAmount,
-		&i.TotalMoneyBuy,
+		&i.BuyVolume,
+		&i.BuyValue,
 		&i.CapitalCost,
 		&i.MarketPrice,
-		&i.TotalSellAmount,
-		&i.TotalMoneySell,
+		&i.SellVolume,
+		&i.SellValue,
 		&i.CurrentVolume,
 		&i.Description,
 		&i.Status,
+		&i.Fee,
+		&i.Tax,
+		&i.UpdatedDate,
 	)
 	return i, err
 }

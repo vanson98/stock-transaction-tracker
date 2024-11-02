@@ -66,7 +66,7 @@ func (mr *MockIAccountServiceMockRecorder) Delete(arg0, arg1 interface{}) *gomoc
 }
 
 // GetAllPaging mocks base method.
-func (m *MockIAccountService) GetAllPaging(arg0 context.Context, arg1 db.ListAccountsParams) ([]db.Account, error) {
+func (m *MockIAccountService) GetAllPaging(arg0 context.Context, arg1 db.GetAccountsPagingParams) ([]db.Account, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllPaging", arg0, arg1)
 	ret0, _ := ret[0].([]db.Account)
@@ -93,6 +93,21 @@ func (m *MockIAccountService) GetById(arg0 context.Context, arg1 int64) (db.Acco
 func (mr *MockIAccountServiceMockRecorder) GetById(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetById", reflect.TypeOf((*MockIAccountService)(nil).GetById), arg0, arg1)
+}
+
+// ListAllAccount mocks base method.
+func (m *MockIAccountService) ListAllAccount(arg0 context.Context) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListAllAccount", arg0)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListAllAccount indicates an expected call of ListAllAccount.
+func (mr *MockIAccountServiceMockRecorder) ListAllAccount(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAllAccount", reflect.TypeOf((*MockIAccountService)(nil).ListAllAccount), arg0)
 }
 
 // TransferMoney mocks base method.

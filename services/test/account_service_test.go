@@ -47,11 +47,11 @@ func TestGetById(t *testing.T) {
 	require.Equal(t, acc, getAcc)
 }
 
-func TestListAccount(t *testing.T) {
+func TestGetAllPaging(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		createRandomAccount(t)
 	}
-	accounts, err := accService.GetAllPaging(context.Background(), db.ListAccountsParams{
+	accounts, err := accService.GetAllPaging(context.Background(), db.GetAccountsPagingParams{
 		Limit:  5,
 		Offset: 5,
 	})
@@ -154,4 +154,10 @@ func TestTranserMoneyTx(t *testing.T) {
 		require.NotContains(t, existed, k)
 		existed[k] = true
 	}
+}
+
+func TestListAllAccount(t *testing.T) {
+	accounts, err := accService.ListAllAccount(context.Background())
+	require.NoError(t, err)
+	require.Greater(t, len(accounts), 0)
 }
