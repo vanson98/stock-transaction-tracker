@@ -154,22 +154,29 @@ func (q *Queries) GetAccountsPaging(ctx context.Context, arg GetAccountsPagingPa
 }
 
 const listAllAccount = `-- name: ListAllAccount :many
-select channel_name from accounts
+select id, channel_name, owner, balance, currency, created_at from accounts
 `
 
-func (q *Queries) ListAllAccount(ctx context.Context) ([]string, error) {
+func (q *Queries) ListAllAccount(ctx context.Context) ([]Account, error) {
 	rows, err := q.db.Query(ctx, listAllAccount)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []string
+	var items []Account
 	for rows.Next() {
-		var channel_name string
-		if err := rows.Scan(&channel_name); err != nil {
+		var i Account
+		if err := rows.Scan(
+			&i.ID,
+			&i.ChannelName,
+			&i.Owner,
+			&i.Balance,
+			&i.Currency,
+			&i.CreatedAt,
+		); err != nil {
 			return nil, err
 		}
-		items = append(items, channel_name)
+		items = append(items, i)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

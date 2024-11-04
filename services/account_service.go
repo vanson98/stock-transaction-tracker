@@ -28,7 +28,7 @@ func (as accountService) CreateNew(ctx context.Context, param db.CreateAccountPa
 }
 
 // ListAllAccount implements sv_interface.IAccountService.
-func (as accountService) ListAllAccount(ctx context.Context) ([]string, error) {
+func (as accountService) ListAllAccount(ctx context.Context) ([]db.Account, error) {
 	return as.store.ListAllAccount(ctx)
 }
 

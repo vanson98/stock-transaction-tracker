@@ -30,6 +30,7 @@ ALTER TABLE investments DROP COLUMN fee;
 ALTER TABLE investments DROP COLUMN tax;
 ALTER TABLE investments DROP COLUMN updated_date;
 
-insert into investments()
+insert into investments(account_id,ticker,company_name,buy_volume,buy_value,capital_cost,market_price,sell_volume,sell_value,current_volume,description,status,fee,tax)
+VALUES()
 select a.channel_name from accounts as a
 where a.

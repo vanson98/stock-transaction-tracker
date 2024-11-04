@@ -27,4 +27,4 @@ DELETE FROM accounts
 WHERE id=$1;
 
 -- name: ListAllAccount :many
-select channel_name from accounts;
+select * from accounts;

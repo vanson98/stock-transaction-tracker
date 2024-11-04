@@ -23,7 +23,7 @@ type Querier interface {
 	GetInvestmentByAccountId(ctx context.Context, accountID int64) ([]Investment, error)
 	GetInvestmentByTicker(ctx context.Context, ticker string) (Investment, error)
 	GetUser(ctx context.Context, username string) (User, error)
-	ListAllAccount(ctx context.Context) ([]string, error)
+	ListAllAccount(ctx context.Context) ([]Account, error)
 	UpdateInvestmentStatus(ctx context.Context, arg UpdateInvestmentStatusParams) error
 }
 

@@ -263,6 +263,57 @@ func TestTranserMoneyAPI(t *testing.T) {
 	}
 }
 
+func TestGetAllAccountAPI(t *testing.T) {
+	// create 2 account for testing
+	var accounts []db.Account
+	accounts = append(accounts, randomAccount())
+	accounts = append(accounts, randomAccount())
+
+	ctrl := gomock.NewController(t)
+	accountService := mock_service.NewMockIAccountService(ctrl)
+
+	testCase := []struct {
+		name          string
+		buildStub     func(param *mock_service.MockIAccountService)
+		checkResponse func(t *testing.T, response *httptest.ResponseRecorder)
+	}{
+		{
+			name: "Happy Case",
+			buildStub: func(mockService *mock_service.MockIAccountService) {
+				mockService.EXPECT().ListAllAccount(gomock.Any()).Times(1).Return(accounts, nil)
+			},
+			checkResponse: func(t *testing.T, response *httptest.ResponseRecorder) {
+				require.Equal(t, response.Result().StatusCode, 200)
+				var responseDataModel []db.Account
+
+				data, _ := io.ReadAll(response.Body)
+				err := json.Unmarshal(data, &responseDataModel)
+				require.NoError(t, err)
+
+				require.Len(t, responseDataModel, 2)
+				require.Greater(t, responseDataModel[0].ID, int64(0))
+				require.Greater(t, responseDataModel[1].ID, int64(0))
+			},
+		},
+	}
+	// sub test
+	for _, subTest := range testCase {
+		t.Run(subTest.name, func(t *testing.T) {
+			subTest.buildStub(accountService)
+
+			server := bootstrap.NewServerApp("../..")
+			route.InitAccountRouter(&server.Engine.RouterGroup, accountService)
+			httpRequest, err := http.NewRequest("GET", "/accounts", nil)
+			require.NoError(t, err)
+
+			httpResponse := httptest.NewRecorder()
+			server.Engine.ServeHTTP(httpResponse, httpRequest)
+
+			subTest.checkResponse(t, httpResponse)
+		})
+	}
+}
+
 func randomAccount() db.Account {
 	return db.Account{
 		ID:          util.RandomInt(1, 1000),

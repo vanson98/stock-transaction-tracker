@@ -96,10 +96,10 @@ func (mr *MockIAccountServiceMockRecorder) GetById(arg0, arg1 interface{}) *gomo
 }
 
 // ListAllAccount mocks base method.
-func (m *MockIAccountService) ListAllAccount(arg0 context.Context) ([]string, error) {
+func (m *MockIAccountService) ListAllAccount(arg0 context.Context) ([]db.Account, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListAllAccount", arg0)
-	ret0, _ := ret[0].([]string)
+	ret0, _ := ret[0].([]db.Account)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
