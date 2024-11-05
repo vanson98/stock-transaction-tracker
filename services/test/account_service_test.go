@@ -161,3 +161,38 @@ func TestListAllAccount(t *testing.T) {
 	require.NoError(t, err)
 	require.Greater(t, len(accounts), 0)
 }
+
+func TestGetAccountInfoById(t *testing.T) {
+	// create random account
+	acc := createRandomAccount(t)
+	// create a depositTransfer money depositTransfer
+	depositTransfer, err := accService.TransferMoney(context.Background(), dtos.TransferMoneyTxParam{
+		AccountID: acc.ID,
+		Amount:    util.RandomInt(50, 100),
+		EntryType: db.EntryTypeTM,
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, acc.ID, depositTransfer.Entry.AccountID)
+	require.Equal(t, depositTransfer.Entry.Type, db.EntryTypeTM)
+
+	// create a withdrawal money entry
+	withdrawalTransfer, err := accService.TransferMoney(context.Background(), dtos.TransferMoneyTxParam{
+		AccountID: acc.ID,
+		Amount:    util.RandomInt(-50, 0),
+		EntryType: db.EntryTypeTM,
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, withdrawalTransfer.Entry.AccountID, acc.ID)
+	require.Equal(t, withdrawalTransfer.Entry.Type, db.EntryTypeTM)
+
+	// get account info
+	accInfo, err := accService.GetAccountInfoById(context.Background(), acc.ID)
+	require.NoError(t, err)
+	require.Equal(t, accInfo.ID, acc.ID)
+	require.Equal(t, accInfo.Balance, withdrawalTransfer.UpdatedAccount.Balance)
+	require.Equal(t, accInfo.Deposit, depositTransfer.Entry.Amount)
+	require.Equal(t, accInfo.Withdrawal, withdrawalTransfer.Entry.Amount)
+
+}

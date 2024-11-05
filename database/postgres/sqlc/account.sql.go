@@ -116,6 +116,52 @@ func (q *Queries) GetAccountForUpdate(ctx context.Context, id int64) (Account, e
 	return i, err
 }
 
+const getAccountInfoById = `-- name: GetAccountInfoById :one
+select a.id, a.channel_name, a.balance,a.currency, a."owner",
+SUM(
+	case
+	WHEN amount > 0 and e.type='TM' then amount
+	ELSE 0
+	END
+	) as deposit,
+SUM(
+	CASE 
+	WHEN amount < 0 and e.type='TM' THEN amount
+	ELSE 0 
+	END
+) AS withdrawal
+from accounts as a
+left join entries as e on a.id = e.account_id 
+where a.id = $1
+GROUP BY a.id,  a.channel_name, a.balance, a.currency, a."owner"
+LIMIT 1
+`
+
+type GetAccountInfoByIdRow struct {
+	ID          int64  `json:"id"`
+	ChannelName string `json:"channel_name"`
+	Balance     int64  `json:"balance"`
+	Currency    string `json:"currency"`
+	Owner       string `json:"owner"`
+	Deposit     int64  `json:"deposit"`
+	Withdrawal  int64  `json:"withdrawal"`
+}
+
+func (q *Queries) GetAccountInfoById(ctx context.Context, id int64) (GetAccountInfoByIdRow, error) {
+	row := q.db.QueryRow(ctx, getAccountInfoById, id)
+	var i GetAccountInfoByIdRow
+	err := row.Scan(
+		&i.ID,
+		&i.ChannelName,
+		&i.Balance,
+		&i.Currency,
+		&i.Owner,
+		&i.Deposit,
+		&i.Withdrawal,
+	)
+	return i, err
+}
+
 const getAccountsPaging = `-- name: GetAccountsPaging :many
 SELECT id, channel_name, owner, balance, currency, created_at FROM accounts
 OFFSET $1 LIMIT $2
@@ -154,26 +200,24 @@ func (q *Queries) GetAccountsPaging(ctx context.Context, arg GetAccountsPagingPa
 }
 
 const listAllAccount = `-- name: ListAllAccount :many
-select id, channel_name, owner, balance, currency, created_at from accounts
+select a.id, a.channel_name from accounts as a
 `
 
-func (q *Queries) ListAllAccount(ctx context.Context) ([]Account, error) {
+type ListAllAccountRow struct {
+	ID          int64  `json:"id"`
+	ChannelName string `json:"channel_name"`
+}
+
+func (q *Queries) ListAllAccount(ctx context.Context) ([]ListAllAccountRow, error) {
 	rows, err := q.db.Query(ctx, listAllAccount)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Account
+	var items []ListAllAccountRow
 	for rows.Next() {
-		var i Account
-		if err := rows.Scan(
-			&i.ID,
-			&i.ChannelName,
-			&i.Owner,
-			&i.Balance,
-			&i.Currency,
-			&i.CreatedAt,
-		); err != nil {
+		var i ListAllAccountRow
+		if err := rows.Scan(&i.ID, &i.ChannelName); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

@@ -265,9 +265,17 @@ func TestTranserMoneyAPI(t *testing.T) {
 
 func TestGetAllAccountAPI(t *testing.T) {
 	// create 2 account for testing
-	var accounts []db.Account
-	accounts = append(accounts, randomAccount())
-	accounts = append(accounts, randomAccount())
+	var accountRows []db.ListAllAccountRow
+	acc1 := randomAccount()
+	acc2 := randomAccount()
+	accountRows = append(accountRows, db.ListAllAccountRow{
+		ID:          acc1.ID,
+		ChannelName: acc1.ChannelName,
+	})
+	accountRows = append(accountRows, db.ListAllAccountRow{
+		ID:          acc2.ID,
+		ChannelName: acc2.ChannelName,
+	})
 
 	ctrl := gomock.NewController(t)
 	accountService := mock_service.NewMockIAccountService(ctrl)
@@ -280,7 +288,7 @@ func TestGetAllAccountAPI(t *testing.T) {
 		{
 			name: "Happy Case",
 			buildStub: func(mockService *mock_service.MockIAccountService) {
-				mockService.EXPECT().ListAllAccount(gomock.Any()).Times(1).Return(accounts, nil)
+				mockService.EXPECT().ListAllAccount(gomock.Any()).Times(1).Return(accountRows, nil)
 			},
 			checkResponse: func(t *testing.T, response *httptest.ResponseRecorder) {
 				require.Equal(t, response.Result().StatusCode, 200)
@@ -304,6 +312,71 @@ func TestGetAllAccountAPI(t *testing.T) {
 			server := bootstrap.NewServerApp("../..")
 			route.InitAccountRouter(&server.Engine.RouterGroup, accountService)
 			httpRequest, err := http.NewRequest("GET", "/accounts", nil)
+			require.NoError(t, err)
+
+			httpResponse := httptest.NewRecorder()
+			server.Engine.ServeHTTP(httpResponse, httpRequest)
+
+			subTest.checkResponse(t, httpResponse)
+		})
+	}
+}
+
+func TestGetAccountInfoAPI(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	accountService := mock_service.NewMockIAccountService(ctrl)
+	account := randomAccount()
+	accountInfo := db.GetAccountInfoByIdRow{
+		ID:          account.ID,
+		ChannelName: account.ChannelName,
+		Deposit:     1000,
+		Withdrawal:  -1000,
+	}
+
+	testCase := []struct {
+		name          string
+		params        int64
+		buildStub     func(param *mock_service.MockIAccountService)
+		checkResponse func(t *testing.T, response *httptest.ResponseRecorder)
+	}{
+		{
+			name:   "OK",
+			params: account.ID,
+			buildStub: func(mockService *mock_service.MockIAccountService) {
+				mockService.EXPECT().GetAccountInfoById(gomock.Any(), account.ID).Times(1).Return(accountInfo, nil)
+			},
+			checkResponse: func(t *testing.T, response *httptest.ResponseRecorder) {
+				require.Equal(t, response.Result().StatusCode, 200)
+				var responseDataModel db.GetAccountInfoByIdRow
+
+				data, _ := io.ReadAll(response.Body)
+				err := json.Unmarshal(data, &responseDataModel)
+				require.NoError(t, err)
+
+				require.Equal(t, account.ID, responseDataModel.ID)
+				require.Equal(t, account.ChannelName, responseDataModel.ChannelName)
+			},
+		},
+		{
+			name:   "Bad Request",
+			params: -123,
+			buildStub: func(mockService *mock_service.MockIAccountService) {
+				mockService.EXPECT().GetAccountInfoById(gomock.Any(), gomock.Any()).Times(0)
+			},
+			checkResponse: func(t *testing.T, response *httptest.ResponseRecorder) {
+				require.Equal(t, response.Result().StatusCode, 400)
+			},
+		},
+	}
+	// sub test
+	for _, subTest := range testCase {
+		t.Run(subTest.name, func(t *testing.T) {
+			subTest.buildStub(accountService)
+
+			server := bootstrap.NewServerApp("../..")
+			route.InitAccountRouter(&server.Engine.RouterGroup, accountService)
+			url := fmt.Sprintf("/account-info/%d", subTest.params)
+			httpRequest, err := http.NewRequest("GET", url, nil)
 			require.NoError(t, err)
 
 			httpResponse := httptest.NewRecorder()

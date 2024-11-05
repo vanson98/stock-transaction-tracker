@@ -17,13 +17,14 @@ type Querier interface {
 	DeleteAccount(ctx context.Context, id int64) error
 	GetAccountById(ctx context.Context, id int64) (Account, error)
 	GetAccountForUpdate(ctx context.Context, id int64) (Account, error)
+	GetAccountInfoById(ctx context.Context, id int64) (GetAccountInfoByIdRow, error)
 	GetAccountsPaging(ctx context.Context, arg GetAccountsPagingParams) ([]Account, error)
 	GetAllInvestment(ctx context.Context) ([]Investment, error)
 	GetEntryById(ctx context.Context, id int64) (Entry, error)
 	GetInvestmentByAccountId(ctx context.Context, accountID int64) ([]Investment, error)
 	GetInvestmentByTicker(ctx context.Context, ticker string) (Investment, error)
 	GetUser(ctx context.Context, username string) (User, error)
-	ListAllAccount(ctx context.Context) ([]Account, error)
+	ListAllAccount(ctx context.Context) ([]ListAllAccountRow, error)
 	UpdateInvestmentStatus(ctx context.Context, arg UpdateInvestmentStatusParams) error
 }
 

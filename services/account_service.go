@@ -22,13 +22,18 @@ func InitAccountService(store db.IStore, timeout time.Duration) sv_interface.IAc
 	}
 }
 
+// GetAccountInfoById implements sv_interface.IAccountService.
+func (as accountService) GetAccountInfoById(ctx context.Context, id int64) (db.GetAccountInfoByIdRow, error) {
+	return as.store.GetAccountInfoById(ctx, id)
+}
+
 // CreateNew implements sv_interface.IAccountService.
 func (as accountService) CreateNew(ctx context.Context, param db.CreateAccountParams) (db.Account, error) {
 	return as.store.CreateAccount(ctx, param)
 }
 
 // ListAllAccount implements sv_interface.IAccountService.
-func (as accountService) ListAllAccount(ctx context.Context) ([]db.Account, error) {
+func (as accountService) ListAllAccount(ctx context.Context) ([]db.ListAllAccountRow, error) {
 	return as.store.ListAllAccount(ctx)
 }
 

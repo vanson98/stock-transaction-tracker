@@ -61,7 +61,22 @@ func (ac *AccountController) GetAccountById(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, account)
 }
 
-func (ac *AccountController) GetAllAccount(ctx *gin.Context) {
+func (ac *AccountController) GetAccountInfoById(ctx *gin.Context) {
+	var requestData apimodels.GetAccountInfoRequest
+	err := ctx.BindUri(&requestData)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	acc, err := ac.AccountService.GetAccountInfoById(ctx, requestData.Id)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+	ctx.JSON(http.StatusOK, acc)
+}
+
+func (ac *AccountController) GetListAccount(ctx *gin.Context) {
 	accounts, err := ac.AccountService.ListAllAccount(ctx)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))

@@ -16,6 +16,26 @@ FOR NO KEY UPDATE;
 SELECT * FROM accounts
 WHERE id=$1 LIMIT 1;
 
+-- name: GetAccountInfoById :one 
+select a.id, a.channel_name, a.balance,a.currency, a."owner",
+SUM(
+	case
+	WHEN amount > 0 and e.type='TM' then amount
+	ELSE 0
+	END
+	) as deposit,
+SUM(
+	CASE 
+	WHEN amount < 0 and e.type='TM' THEN amount
+	ELSE 0 
+	END
+) AS withdrawal
+from accounts as a
+left join entries as e on a.id = e.account_id 
+where a.id = $1
+GROUP BY a.id,  a.channel_name, a.balance, a.currency, a."owner"
+LIMIT 1;
+
 -- name: AddAccountBalance :one
 UPDATE accounts
 SET balance = balance + sqlc.arg(amount)
@@ -27,4 +47,4 @@ DELETE FROM accounts
 WHERE id=$1;
 
 -- name: ListAllAccount :many
-select * from accounts;
+select a.id, a.channel_name from accounts as a;

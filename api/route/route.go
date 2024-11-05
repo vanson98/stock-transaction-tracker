@@ -1,17 +1,17 @@
 package route
 
 import (
+	"stt/api/middleware"
 	"stt/bootstrap"
 	db "stt/database/postgres/sqlc"
 	"stt/services"
 	"time"
 
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
 func Setup(env *bootstrap.Env, timeout time.Duration, store db.IStore, engine *gin.Engine) {
-	useMiddleware(engine)
+	middleware.UseCors(engine)
 	//publicRouter := gin.Group("")
 
 	accountService := services.InitAccountService(store, timeout)
@@ -23,8 +23,4 @@ func Setup(env *bootstrap.Env, timeout time.Duration, store db.IStore, engine *g
 	InitInvestmentRouter(protectedRouter, &investmentService)
 	InitAccountRouter(protectedRouter, accountService)
 	InitUserRouter(protectedRouter, userService)
-}
-
-func useMiddleware(engine *gin.Engine) {
-	engine.Use(cors.Default())
 }
