@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
-	apimodels "stt/api/models"
+	account_model "stt/api/models/account"
 	db "stt/database/postgres/sqlc"
 	"stt/services/dtos"
 	sv_interface "stt/services/interfaces"
@@ -18,7 +18,7 @@ type AccountController struct {
 }
 
 func (ac *AccountController) CreateNewAccount(ctx *gin.Context) {
-	var reqBody apimodels.CreateAccountRequest
+	var reqBody account_model.CreateAccountRequest
 	if err := ctx.ShouldBindBodyWithJSON(&reqBody); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
@@ -46,7 +46,7 @@ func (ac *AccountController) CreateNewAccount(ctx *gin.Context) {
 }
 
 func (ac *AccountController) GetAccountById(ctx *gin.Context) {
-	requestParam := apimodels.GetAccountRequest{}
+	requestParam := account_model.GetAccountRequest{}
 	err := ctx.ShouldBindUri(&requestParam)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
@@ -62,7 +62,7 @@ func (ac *AccountController) GetAccountById(ctx *gin.Context) {
 }
 
 func (ac *AccountController) GetAccountInfoById(ctx *gin.Context) {
-	var requestData apimodels.GetAccountInfoRequest
+	var requestData account_model.GetAccountInfoRequest
 	err := ctx.BindUri(&requestData)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
@@ -86,13 +86,17 @@ func (ac *AccountController) GetListAccount(ctx *gin.Context) {
 }
 
 func (ac *AccountController) TransferMoney(ctx *gin.Context) {
-	transferRequest := apimodels.TransferMoneyRequest{}
+	transferRequest := account_model.TransferMoneyRequest{}
 	if err := ctx.ShouldBindBodyWithJSON(&transferRequest); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
 	if !ac.validAccount(ctx, transferRequest.AccountID, transferRequest.Currency) {
+		return
+	}
+
+	if !ac.validTransfer(ctx, transferRequest.AccountID, transferRequest.Amount) {
 		return
 	}
 
@@ -123,6 +127,25 @@ func (ac *AccountController) validAccount(ctx *gin.Context, accountId int64, cur
 
 	if acc.Currency != currency {
 		err := fmt.Errorf("account [%d] currency mismatch: %s vs %s", acc.ID, acc.Currency, currency)
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return false
+	}
+	return true
+}
+
+func (ac *AccountController) validTransfer(ctx *gin.Context, accountId int64, amount int64) bool {
+	updateAccount, err := ac.AccountService.GetById(ctx, accountId)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return false
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return false
+	}
+
+	if updateAccount.Balance+amount < 0 {
+		err := fmt.Errorf("can not perform this tranfer because balance is negative")
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return false
 	}

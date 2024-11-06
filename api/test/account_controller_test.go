@@ -8,7 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	apimodels "stt/api/models"
+	account_model "stt/api/models/account"
 	"stt/api/route"
 	"stt/bootstrap"
 	db "stt/database/postgres/sqlc"
@@ -33,13 +33,13 @@ func TestCreateAccountAPI(t *testing.T) {
 
 	testCases := []struct {
 		name          string
-		params        apimodels.CreateAccountRequest
+		params        account_model.CreateAccountRequest
 		buildStubs    func(accountService *mock_service.MockIAccountService)
 		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
 	}{
 		{
 			name: "Success OK",
-			params: apimodels.CreateAccountRequest{
+			params: account_model.CreateAccountRequest{
 				ChannelName: account.ChannelName,
 				Owner:       account.Owner,
 				Currency:    account.Currency,
@@ -58,7 +58,7 @@ func TestCreateAccountAPI(t *testing.T) {
 		},
 		{
 			name: "Bad Request",
-			params: apimodels.CreateAccountRequest{
+			params: account_model.CreateAccountRequest{
 				ChannelName: "TCB",
 				Owner:       account.Owner,
 				Currency:    "account.Currency",
@@ -72,7 +72,7 @@ func TestCreateAccountAPI(t *testing.T) {
 		},
 		{
 			name: "InternalServerError",
-			params: apimodels.CreateAccountRequest{
+			params: account_model.CreateAccountRequest{
 				ChannelName: account.ChannelName,
 				Owner:       account.Owner,
 				Currency:    account.Currency,
@@ -200,13 +200,13 @@ func TestTranserMoneyAPI(t *testing.T) {
 
 	testCases := []struct {
 		name          string
-		param         apimodels.TransferMoneyRequest
+		param         account_model.TransferMoneyRequest
 		buildStubs    func(accService *mock_service.MockIAccountService)
 		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
 	}{
 		{
 			name: "Success Transfer",
-			param: apimodels.TransferMoneyRequest{
+			param: account_model.TransferMoneyRequest{
 				AccountID: account.ID,
 				Amount:    amount,
 				EntryType: string(entry.Type),
@@ -227,7 +227,7 @@ func TestTranserMoneyAPI(t *testing.T) {
 		},
 		{
 			name: "Bad request",
-			param: apimodels.TransferMoneyRequest{
+			param: account_model.TransferMoneyRequest{
 				AccountID: -2,
 				Amount:    amount,
 				EntryType: string(entry.Type),

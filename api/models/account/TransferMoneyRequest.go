@@ -1,4 +1,4 @@
-package apimodels
+package account_model
 
 type TransferMoneyRequest struct {
 	AccountID int64  `json:"accountId" binding:"required,min=1"`

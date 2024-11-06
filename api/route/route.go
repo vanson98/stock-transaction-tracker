@@ -20,7 +20,7 @@ func Setup(env *bootstrap.Env, timeout time.Duration, store db.IStore, engine *g
 
 	// All protected APIs
 	protectedRouter := engine.Group("")
-	InitInvestmentRouter(protectedRouter, &investmentService)
+	InitInvestmentRouter(protectedRouter, investmentService)
 	InitAccountRouter(protectedRouter, accountService)
 	InitUserRouter(protectedRouter, userService)
 }

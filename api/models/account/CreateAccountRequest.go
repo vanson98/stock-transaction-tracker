@@ -1,4 +1,4 @@
-package apimodels
+package account_model
 
 type CreateAccountRequest struct {
 	ChannelName string `json:"channel_name" binding:"required"`

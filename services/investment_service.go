@@ -31,6 +31,11 @@ func (i investmentService) Delete(c context.Context, id int32) {
 	panic("unimplemented")
 }
 
+// GetByTicker implements sv_interface.IInvestmentService.
+func (ivs investmentService) GetByTicker(ctx context.Context, ticker string) (db.Investment, error) {
+	return ivs.store.GetInvestmentByTicker(ctx, ticker)
+}
+
 // GetAll implements domain.IInvestmentService.
 func (i investmentService) GetAll(c context.Context) {
 	panic("unimplemented")

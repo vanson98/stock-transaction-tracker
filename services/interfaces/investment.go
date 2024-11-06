@@ -11,4 +11,5 @@ type IInvestmentService interface {
 	GetById(c context.Context, id int32)
 	GetAll(c context.Context)
 	Delete(c context.Context, id int32)
+	GetByTicker(ctx context.Context, ticker string) (db.Investment, error)
 }

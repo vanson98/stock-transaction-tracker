@@ -10,7 +10,10 @@ where account_id=200
 update schema_migrations
 SET "version" = 11, dirty=FALSE
 =========
-
+select * from accounts
+where id = 165
+select * from entries 
+where account_id=165
 
 
 select 

@@ -229,6 +229,21 @@ func (mr *MockIInvestmentServiceMockRecorder) GetById(arg0, arg1 interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetById", reflect.TypeOf((*MockIInvestmentService)(nil).GetById), arg0, arg1)
 }
 
+// GetByTicker mocks base method.
+func (m *MockIInvestmentService) GetByTicker(arg0 context.Context, arg1 string) (db.Investment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByTicker", arg0, arg1)
+	ret0, _ := ret[0].(db.Investment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByTicker indicates an expected call of GetByTicker.
+func (mr *MockIInvestmentServiceMockRecorder) GetByTicker(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByTicker", reflect.TypeOf((*MockIInvestmentService)(nil).GetByTicker), arg0, arg1)
+}
+
 // MockIUserService is a mock of IUserService interface.
 type MockIUserService struct {
 	ctrl     *gomock.Controller
