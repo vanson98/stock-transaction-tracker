@@ -58,7 +58,7 @@ var TxKey = struct{}{}
 func (as accountService) TransferMoney(ctx context.Context, arg dtos.TransferMoneyTxParam) (dtos.TransferMoneyTxResult, error) {
 	var result dtos.TransferMoneyTxResult
 
-	err := as.store.ExecTx(ctx, func(q *db.Queries) error {
+	_, err := as.store.ExecTx(ctx, func(q *db.Queries) (interface{}, error) {
 		var err error
 		txName := ctx.Value(TxKey)
 
@@ -70,7 +70,7 @@ func (as accountService) TransferMoney(ctx context.Context, arg dtos.TransferMon
 			Amount:    arg.Amount,
 		})
 		if err != nil {
-			return err
+			return nil, err
 		}
 		result.Entry = accEntry
 
@@ -88,9 +88,9 @@ func (as accountService) TransferMoney(ctx context.Context, arg dtos.TransferMon
 			Amount: arg.Amount,
 		})
 		if err != nil {
-			return err
+			return nil, err
 		}
-		return nil
+		return nil, nil
 	})
 	return result, err
 }
