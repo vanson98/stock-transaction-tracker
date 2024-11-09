@@ -194,5 +194,17 @@ func TestGetAccountInfoById(t *testing.T) {
 	require.Equal(t, accInfo.Balance, withdrawalTransfer.UpdatedAccount.Balance)
 	require.Equal(t, accInfo.Deposit, depositTransfer.Entry.Amount)
 	require.Equal(t, accInfo.Withdrawal, withdrawalTransfer.Entry.Amount)
+}
 
+func TestDeleteNonExistentAccount(t *testing.T) {
+	nonExistentID := util.RandomInt(1000, 10000)
+
+	err := accService.Delete(context.Background(), nonExistentID)
+	require.Error(t, err)
+	require.EqualError(t, err, pgx.ErrNoRows.Error())
+
+	// Attempt to get the non-existent account to confirm it doesn't exist
+	_, getErr := accService.GetById(context.Background(), nonExistentID)
+	require.Error(t, getErr)
+	require.EqualError(t, getErr, pgx.ErrNoRows.Error())
 }

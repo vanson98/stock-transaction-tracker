@@ -22,13 +22,13 @@ type CreateTransactionParams struct {
 	Ticker          string            `json:"ticker"`
 	TradingDate     pgtype.Timestamp  `json:"trading_date"`
 	Trade           TradeType         `json:"trade"`
-	Volume          int32             `json:"volume"`
+	Volume          int64             `json:"volume"`
 	OrderPrice      int64             `json:"order_price"`
-	MatchVolume     int32             `json:"match_volume"`
+	MatchVolume     int64             `json:"match_volume"`
 	MatchPrice      int64             `json:"match_price"`
 	MatchValue      int64             `json:"match_value"`
-	Fee             int32             `json:"fee"`
-	Tax             int32             `json:"tax"`
+	Fee             int64             `json:"fee"`
+	Tax             int64             `json:"tax"`
 	Cost            int64             `json:"cost"`
 	CostOfGoodsSold int64             `json:"cost_of_goods_sold"`
 	Return          int64             `json:"return"`
@@ -73,4 +73,22 @@ func (q *Queries) CreateTransaction(ctx context.Context, arg CreateTransactionPa
 		&i.Status,
 	)
 	return i, err
+}
+
+const updateTransactionCost = `-- name: UpdateTransactionCost :exec
+update transactions
+set cost = $2,
+cost_of_goods_sold = $3
+where id = $1
+`
+
+type UpdateTransactionCostParams struct {
+	ID              int64 `json:"id"`
+	Cost            int64 `json:"cost"`
+	CostOfGoodsSold int64 `json:"cost_of_goods_sold"`
+}
+
+func (q *Queries) UpdateTransactionCost(ctx context.Context, arg UpdateTransactionCostParams) error {
+	_, err := q.db.Exec(ctx, updateTransactionCost, arg.ID, arg.Cost, arg.CostOfGoodsSold)
+	return err
 }

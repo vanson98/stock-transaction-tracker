@@ -22,11 +22,14 @@ type Querier interface {
 	GetAccountsPaging(ctx context.Context, arg GetAccountsPagingParams) ([]Account, error)
 	GetAllInvestment(ctx context.Context) ([]Investment, error)
 	GetEntryById(ctx context.Context, id int64) (Entry, error)
-	GetInvestmentByAccountId(ctx context.Context, accountID int64) ([]Investment, error)
+	GetInvestmentById(ctx context.Context, id int64) (Investment, error)
 	GetInvestmentByTicker(ctx context.Context, ticker string) (Investment, error)
+	GetInvestmentsByAccountId(ctx context.Context, accountID int64) ([]Investment, error)
 	GetUser(ctx context.Context, username string) (User, error)
 	ListAllAccount(ctx context.Context) ([]ListAllAccountRow, error)
 	UpdateInvestmentStatus(ctx context.Context, arg UpdateInvestmentStatusParams) error
+	UpdateInvestmentWhenBuying(ctx context.Context, arg UpdateInvestmentWhenBuyingParams) error
+	UpdateTransactionCost(ctx context.Context, arg UpdateTransactionCostParams) error
 }
 
 var _ Querier = (*Queries)(nil)
