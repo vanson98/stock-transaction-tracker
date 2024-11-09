@@ -21,17 +21,17 @@ type CreateInvestmentParams struct {
 	AccountID     int64            `json:"account_id"`
 	Ticker        string           `json:"ticker"`
 	CompanyName   pgtype.Text      `json:"company_name"`
-	BuyVolume     int32            `json:"buy_volume"`
+	BuyVolume     int64            `json:"buy_volume"`
 	BuyValue      int64            `json:"buy_value"`
 	CapitalCost   int64            `json:"capital_cost"`
 	MarketPrice   int64            `json:"market_price"`
-	SellVolume    int32            `json:"sell_volume"`
+	SellVolume    int64            `json:"sell_volume"`
 	SellValue     int64            `json:"sell_value"`
-	CurrentVolume int32            `json:"current_volume"`
+	CurrentVolume int64            `json:"current_volume"`
 	Description   pgtype.Text      `json:"description"`
 	Status        InvestmentStatus `json:"status"`
-	Fee           int32            `json:"fee"`
-	Tax           int32            `json:"tax"`
+	Fee           int64            `json:"fee"`
+	Tax           int64            `json:"tax"`
 }
 
 func (q *Queries) CreateInvestment(ctx context.Context, arg CreateInvestmentParams) (Investment, error) {
@@ -115,13 +115,71 @@ func (q *Queries) GetAllInvestment(ctx context.Context) ([]Investment, error) {
 	return items, nil
 }
 
-const getInvestmentByAccountId = `-- name: GetInvestmentByAccountId :many
+const getInvestmentById = `-- name: GetInvestmentById :one
+select id, account_id, ticker, company_name, buy_volume, buy_value, capital_cost, market_price, sell_volume, sell_value, current_volume, description, status, fee, tax, updated_date from investments
+where id=$1
+`
+
+func (q *Queries) GetInvestmentById(ctx context.Context, id int64) (Investment, error) {
+	row := q.db.QueryRow(ctx, getInvestmentById, id)
+	var i Investment
+	err := row.Scan(
+		&i.ID,
+		&i.AccountID,
+		&i.Ticker,
+		&i.CompanyName,
+		&i.BuyVolume,
+		&i.BuyValue,
+		&i.CapitalCost,
+		&i.MarketPrice,
+		&i.SellVolume,
+		&i.SellValue,
+		&i.CurrentVolume,
+		&i.Description,
+		&i.Status,
+		&i.Fee,
+		&i.Tax,
+		&i.UpdatedDate,
+	)
+	return i, err
+}
+
+const getInvestmentByTicker = `-- name: GetInvestmentByTicker :one
+SELECT id, account_id, ticker, company_name, buy_volume, buy_value, capital_cost, market_price, sell_volume, sell_value, current_volume, description, status, fee, tax, updated_date from investments
+where ticker=$1
+`
+
+func (q *Queries) GetInvestmentByTicker(ctx context.Context, ticker string) (Investment, error) {
+	row := q.db.QueryRow(ctx, getInvestmentByTicker, ticker)
+	var i Investment
+	err := row.Scan(
+		&i.ID,
+		&i.AccountID,
+		&i.Ticker,
+		&i.CompanyName,
+		&i.BuyVolume,
+		&i.BuyValue,
+		&i.CapitalCost,
+		&i.MarketPrice,
+		&i.SellVolume,
+		&i.SellValue,
+		&i.CurrentVolume,
+		&i.Description,
+		&i.Status,
+		&i.Fee,
+		&i.Tax,
+		&i.UpdatedDate,
+	)
+	return i, err
+}
+
+const getInvestmentsByAccountId = `-- name: GetInvestmentsByAccountId :many
 select id, account_id, ticker, company_name, buy_volume, buy_value, capital_cost, market_price, sell_volume, sell_value, current_volume, description, status, fee, tax, updated_date from investments
 where account_id=$1
 `
 
-func (q *Queries) GetInvestmentByAccountId(ctx context.Context, accountID int64) ([]Investment, error) {
-	rows, err := q.db.Query(ctx, getInvestmentByAccountId, accountID)
+func (q *Queries) GetInvestmentsByAccountId(ctx context.Context, accountID int64) ([]Investment, error) {
+	rows, err := q.db.Query(ctx, getInvestmentsByAccountId, accountID)
 	if err != nil {
 		return nil, err
 	}
@@ -157,35 +215,6 @@ func (q *Queries) GetInvestmentByAccountId(ctx context.Context, accountID int64)
 	return items, nil
 }
 
-const getInvestmentByTicker = `-- name: GetInvestmentByTicker :one
-SELECT id, account_id, ticker, company_name, buy_volume, buy_value, capital_cost, market_price, sell_volume, sell_value, current_volume, description, status, fee, tax, updated_date from investments
-where ticker=$1
-`
-
-func (q *Queries) GetInvestmentByTicker(ctx context.Context, ticker string) (Investment, error) {
-	row := q.db.QueryRow(ctx, getInvestmentByTicker, ticker)
-	var i Investment
-	err := row.Scan(
-		&i.ID,
-		&i.AccountID,
-		&i.Ticker,
-		&i.CompanyName,
-		&i.BuyVolume,
-		&i.BuyValue,
-		&i.CapitalCost,
-		&i.MarketPrice,
-		&i.SellVolume,
-		&i.SellValue,
-		&i.CurrentVolume,
-		&i.Description,
-		&i.Status,
-		&i.Fee,
-		&i.Tax,
-		&i.UpdatedDate,
-	)
-	return i, err
-}
-
 const updateInvestmentStatus = `-- name: UpdateInvestmentStatus :exec
 update investments
 set status=$2
@@ -199,5 +228,42 @@ type UpdateInvestmentStatusParams struct {
 
 func (q *Queries) UpdateInvestmentStatus(ctx context.Context, arg UpdateInvestmentStatusParams) error {
 	_, err := q.db.Exec(ctx, updateInvestmentStatus, arg.ID, arg.Status)
+	return err
+}
+
+const updateInvestmentWhenBuying = `-- name: UpdateInvestmentWhenBuying :exec
+update investments
+set buy_volume = $2,
+buy_value = $3,
+capital_cost = $4,
+current_volume = $5,
+fee = $6,
+tax = $7,
+updated_date = $8
+where id = $1
+`
+
+type UpdateInvestmentWhenBuyingParams struct {
+	ID            int64            `json:"id"`
+	BuyVolume     int64            `json:"buy_volume"`
+	BuyValue      int64            `json:"buy_value"`
+	CapitalCost   int64            `json:"capital_cost"`
+	CurrentVolume int64            `json:"current_volume"`
+	Fee           int64            `json:"fee"`
+	Tax           int64            `json:"tax"`
+	UpdatedDate   pgtype.Timestamp `json:"updated_date"`
+}
+
+func (q *Queries) UpdateInvestmentWhenBuying(ctx context.Context, arg UpdateInvestmentWhenBuyingParams) error {
+	_, err := q.db.Exec(ctx, updateInvestmentWhenBuying,
+		arg.ID,
+		arg.BuyVolume,
+		arg.BuyValue,
+		arg.CapitalCost,
+		arg.CurrentVolume,
+		arg.Fee,
+		arg.Tax,
+		arg.UpdatedDate,
+	)
 	return err
 }

@@ -11,14 +11,29 @@ ORDER BY ticker;
 SELECT * from investments
 where ticker=$1;
 
--- name: GetInvestmentByAccountId :many
+-- name: GetInvestmentsByAccountId :many
 select * from investments
 where account_id=$1;
+
+-- name: GetInvestmentById :one
+select * from investments
+where id=$1;
 
 -- name: UpdateInvestmentStatus :exec
 update investments
 set status=$2
 WHERE id=$1;
+
+-- name: UpdateInvestmentWhenBuying :exec
+update investments
+set buy_volume = $2,
+buy_value = $3,
+capital_cost = $4,
+current_volume = $5,
+fee = $6,
+tax = $7,
+updated_date = $8
+where id = $1;
 
 
 

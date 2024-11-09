@@ -16,9 +16,11 @@ var pgConnPool *pgxpool.Pool
 var store db.IStore
 var accService sv_interface.IAccountService
 var userService sv_interface.IUserService
+var tranService sv_interface.ITransactionService
+var investmentService sv_interface.IInvestmentService
 
 func TestMain(m *testing.M) {
-	var timeout time.Duration = 3
+	var timeout time.Duration = time.Second * 3
 	env := bootstrap.NewEnv("../..")
 	pgConnPool = bootstrap.NewPostgresConnectionPool(env)
 	defer bootstrap.ClosePostgresDbConnectionPool(pgConnPool)
@@ -26,5 +28,7 @@ func TestMain(m *testing.M) {
 	store = db.NewStore(pgConnPool)
 	accService = services.InitAccountService(store, timeout)
 	userService = services.InitUserService(store)
+	tranService = services.InitTransactionService(store)
+	investmentService = services.InitInvestmentService(store, timeout)
 	os.Exit(m.Run())
 }
