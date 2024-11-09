@@ -1,0 +1,11 @@
+ALTER TABLE transactions ALTER COLUMN volume SET DATA TYPE int8;
+ALTER TABLE transactions ALTER COLUMN match_volume SET DATA TYPE int8;
+ALTER TABLE transactions ALTER COLUMN fee SET DATA TYPE int8;
+ALTER TABLE transactions ALTER COLUMN tax SET DATA TYPE int8;
+ALTER TABLE transactions ALTER COLUMN volume SET DATA TYPE int8;
+
+ALTER TABLE investments ALTER COLUMN buy_volume SET DATA TYPE int8;
+ALTER TABLE investments ALTER COLUMN sell_volume SET DATA TYPE int8;
+ALTER TABLE investments ALTER COLUMN current_volume SET DATA TYPE int8;
+ALTER TABLE investments ALTER COLUMN fee SET DATA TYPE int8;
+ALTER TABLE investments ALTER COLUMN tax SET DATA TYPE int8;
