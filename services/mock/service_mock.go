@@ -193,34 +193,13 @@ func (mr *MockIInvestmentServiceMockRecorder) Create(arg0, arg1 interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockIInvestmentService)(nil).Create), arg0, arg1)
 }
 
-// Delete mocks base method.
-func (m *MockIInvestmentService) Delete(arg0 context.Context, arg1 int32) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Delete", arg0, arg1)
-}
-
-// Delete indicates an expected call of Delete.
-func (mr *MockIInvestmentServiceMockRecorder) Delete(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockIInvestmentService)(nil).Delete), arg0, arg1)
-}
-
-// GetAll mocks base method.
-func (m *MockIInvestmentService) GetAll(arg0 context.Context) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "GetAll", arg0)
-}
-
-// GetAll indicates an expected call of GetAll.
-func (mr *MockIInvestmentServiceMockRecorder) GetAll(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockIInvestmentService)(nil).GetAll), arg0)
-}
-
 // GetById mocks base method.
-func (m *MockIInvestmentService) GetById(arg0 context.Context, arg1 int32) {
+func (m *MockIInvestmentService) GetById(arg0 context.Context, arg1 int64) (db.Investment, error) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "GetById", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetById", arg0, arg1)
+	ret0, _ := ret[0].(db.Investment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // GetById indicates an expected call of GetById.

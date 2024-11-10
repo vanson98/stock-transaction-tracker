@@ -10,6 +10,6 @@ import (
 func InitInvestmentRouter(group *gin.RouterGroup, investmentService sv_interface.IInvestmentService) {
 	ic := controller.InitInvestmentController(investmentService)
 
-	group.GET("/investments", ic.GetAll)
+	//group.GET("/investments", ic.GetAll)
 	group.POST("/investment", ic.Create)
 }

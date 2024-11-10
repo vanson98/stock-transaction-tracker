@@ -21,9 +21,9 @@ func InitInvestmentController(investmentService sv_interface.IInvestmentService)
 	}
 }
 
-func (ic *InvestmentController) GetAll(c *gin.Context) {
-	ic.investmentService.GetAll(c)
-}
+// func (ic *InvestmentController) GetAll(c *gin.Context) {
+// 	ic.investmentService.GetAll(c)
+// }
 
 func (ic *InvestmentController) Create(c *gin.Context) {
 	var createInvestmentModel investment_model.CreateInvestmentModel
