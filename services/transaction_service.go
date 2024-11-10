@@ -21,17 +21,22 @@ func InitTransactionService(store db.IStore) sv_interface.ITransactionService {
 	}
 }
 
+// GetById implements sv_interface.ITransactionService.
+func (t transactionService) GetById(ctx context.Context, id int64) (db.Transaction, error) {
+	return t.store.GetTransactionById(ctx, id)
+}
+
 // CreateNew implements sv_interface.ITransactionService.
-func (t transactionService) CreateBuyingTransaction(ctx context.Context, arg dtos.CreateTransactionDto) error {
-	err := t.store.ExecTx(ctx, func(q *db.Queries) error {
+func (t transactionService) CreateBuyingTransaction(ctx context.Context, arg dtos.CreateTransactionDto) (db.Transaction, error) {
+	result, err := t.store.ExecTx(ctx, func(q *db.Queries) (interface{}, error) {
 		// check account balance
 		account, err := t.store.GetAccountById(ctx, arg.AccountId)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		transctionTempCost := (arg.MatchPrice * arg.MatchVolume) + arg.Fee + arg.Tax
 		if account.Balance < transctionTempCost {
-			return fmt.Errorf("account balance is less than transation cost")
+			return nil, fmt.Errorf("account balance is less than transation cost")
 		}
 
 		// create entry
@@ -41,7 +46,7 @@ func (t transactionService) CreateBuyingTransaction(ctx context.Context, arg dto
 			Type:      db.EntryTypeIT,
 		})
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		//update account balance
@@ -50,7 +55,7 @@ func (t transactionService) CreateBuyingTransaction(ctx context.Context, arg dto
 			Amount: entry.Amount,
 		})
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		// create transaction
@@ -67,16 +72,16 @@ func (t transactionService) CreateBuyingTransaction(ctx context.Context, arg dto
 			Fee:          arg.Fee,
 			Tax:          arg.Tax,
 			Return:       0,
-			Status:       db.TransactionStatusINCOMPLETED,
+			Status:       arg.Status,
 		})
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		// update investment
 		investment, err := t.store.GetInvestmentById(ctx, arg.InvestmentId)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		investment.BuyVolume += transaction.MatchVolume
 		investment.BuyValue += transaction.MatchValue
@@ -99,19 +104,23 @@ func (t transactionService) CreateBuyingTransaction(ctx context.Context, arg dto
 			},
 		})
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		// update transaction cost
-		err = t.store.UpdateTransactionCost(ctx, db.UpdateTransactionCostParams{
+		transaction, err = t.store.UpdateTransactionCost(ctx, db.UpdateTransactionCostParams{
 			ID:              transaction.ID,
 			Cost:            investment.CapitalCost,
 			CostOfGoodsSold: investment.CapitalCost * transaction.MatchVolume,
 		})
 		if err != nil {
-			return err
+			return nil, err
 		}
-		return nil
+		return transaction, nil
 	})
-	return err
+	transaction, ok := result.(db.Transaction)
+	if !ok {
+		return db.Transaction{}, err
+	}
+	return transaction, err
 }
