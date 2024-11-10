@@ -75,11 +75,41 @@ func (q *Queries) CreateTransaction(ctx context.Context, arg CreateTransactionPa
 	return i, err
 }
 
-const updateTransactionCost = `-- name: UpdateTransactionCost :exec
+const getTransactionById = `-- name: GetTransactionById :one
+select id, investment_id, ticker, trading_date, trade, volume, order_price, match_volume, match_price, match_value, fee, tax, cost, cost_of_goods_sold, return, status from transactions
+where id = $1
+`
+
+func (q *Queries) GetTransactionById(ctx context.Context, id int64) (Transaction, error) {
+	row := q.db.QueryRow(ctx, getTransactionById, id)
+	var i Transaction
+	err := row.Scan(
+		&i.ID,
+		&i.InvestmentID,
+		&i.Ticker,
+		&i.TradingDate,
+		&i.Trade,
+		&i.Volume,
+		&i.OrderPrice,
+		&i.MatchVolume,
+		&i.MatchPrice,
+		&i.MatchValue,
+		&i.Fee,
+		&i.Tax,
+		&i.Cost,
+		&i.CostOfGoodsSold,
+		&i.Return,
+		&i.Status,
+	)
+	return i, err
+}
+
+const updateTransactionCost = `-- name: UpdateTransactionCost :one
 update transactions
 set cost = $2,
 cost_of_goods_sold = $3
 where id = $1
+returning id, investment_id, ticker, trading_date, trade, volume, order_price, match_volume, match_price, match_value, fee, tax, cost, cost_of_goods_sold, return, status
 `
 
 type UpdateTransactionCostParams struct {
@@ -88,7 +118,26 @@ type UpdateTransactionCostParams struct {
 	CostOfGoodsSold int64 `json:"cost_of_goods_sold"`
 }
 
-func (q *Queries) UpdateTransactionCost(ctx context.Context, arg UpdateTransactionCostParams) error {
-	_, err := q.db.Exec(ctx, updateTransactionCost, arg.ID, arg.Cost, arg.CostOfGoodsSold)
-	return err
+func (q *Queries) UpdateTransactionCost(ctx context.Context, arg UpdateTransactionCostParams) (Transaction, error) {
+	row := q.db.QueryRow(ctx, updateTransactionCost, arg.ID, arg.Cost, arg.CostOfGoodsSold)
+	var i Transaction
+	err := row.Scan(
+		&i.ID,
+		&i.InvestmentID,
+		&i.Ticker,
+		&i.TradingDate,
+		&i.Trade,
+		&i.Volume,
+		&i.OrderPrice,
+		&i.MatchVolume,
+		&i.MatchPrice,
+		&i.MatchValue,
+		&i.Fee,
+		&i.Tax,
+		&i.Cost,
+		&i.CostOfGoodsSold,
+		&i.Return,
+		&i.Status,
+	)
+	return i, err
 }
