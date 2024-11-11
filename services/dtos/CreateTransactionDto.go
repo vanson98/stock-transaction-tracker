@@ -18,5 +18,5 @@ type CreateTransactionDto struct {
 	MatchPrice   int64
 	Fee          int64
 	Tax          int64
-	Status       string
+	Status       db.TransactionStatus
 }

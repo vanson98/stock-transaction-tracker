@@ -7,10 +7,3 @@ INSERT INTO transactions(investment_id,ticker,trading_date,trade,volume,order_pr
 VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
 RETURNING *;
 
--- name: UpdateTransactionCost :one
-update transactions
-set cost = $2,
-cost_of_goods_sold = $3
-where id = $1
-returning *;
-

@@ -27,7 +27,7 @@ func (ivs investmentService) Create(c context.Context, param db.CreateInvestment
 }
 
 // Delete implements domain.IInvestmentService.
-func (i investmentService) Delete(c context.Context, id int32) {
+func (i investmentService) Delete(c context.Context, id int64) {
 	panic("unimplemented")
 }
 
@@ -42,8 +42,8 @@ func (i investmentService) GetAll(c context.Context) {
 }
 
 // GetById implements domain.IInvestmentService.
-func (i investmentService) GetById(c context.Context, id int32) {
-	panic("unimplemented")
+func (i investmentService) GetById(c context.Context, id int64) (db.Investment, error) {
+	return i.store.GetInvestmentById(c, id)
 }
 
 // Update implements domain.IInvestmentService.

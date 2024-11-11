@@ -19,7 +19,7 @@ func createRandomAccount(t *testing.T) db.Account {
 	arg := db.CreateAccountParams{
 		ChannelName: util.RandomString(3),
 		Owner:       user.Username,
-		Balance:     util.RandomInt(1, 1000),
+		Balance:     50000000,
 		Currency:    util.RandomCurrency(),
 	}
 	account, err := accService.CreateNew(context.Background(), arg)
