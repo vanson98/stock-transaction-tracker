@@ -12,3 +12,10 @@ var ValidCurrency validator.Func = func(fieldLevel validator.FieldLevel) bool {
 	}
 	return false
 }
+
+var ValidTradeType validator.Func = func(fl validator.FieldLevel) bool {
+	if trade, ok := fl.Field().Interface().(string); ok {
+		return util.IsSupportedTradeType(trade)
+	}
+	return false
+}

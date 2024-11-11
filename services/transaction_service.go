@@ -123,9 +123,11 @@ func (t *transactionService) insertBuyingTransaction(ctx context.Context, arg dt
 		if err != nil {
 			return nil, err
 		}
-
 		return transaction, nil
 	})
+	if err != nil {
+		return db.Transaction{}, err
+	}
 	transaction, ok := result.(db.Transaction)
 	if !ok {
 		err = fmt.Errorf("can not convert db tx result to transaction type")

@@ -23,6 +23,7 @@ func NewServerApp(envPath string) Application {
 	// custom param validator
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		v.RegisterValidation("currency", controler_validator.ValidCurrency)
+		v.RegisterValidation("trade", controler_validator.ValidTradeType)
 	}
 	return app
 }

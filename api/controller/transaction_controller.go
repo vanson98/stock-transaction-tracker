@@ -4,6 +4,7 @@ import (
 	"net/http"
 	transaction_model "stt/api/models/transaction"
 	db "stt/database/postgres/sqlc"
+	"stt/services/dtos"
 	sv_interface "stt/services/interfaces"
 	"time"
 
@@ -33,25 +34,22 @@ func (tc transactionController) CreateNewTransaction(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
-	result, err := tc.transactionService.CreateNew(c, db.CreateTransactionParams{
-		InvestmentID: requestModel.InvestmentID,
+	result, err := tc.transactionService.AddTransaction(c, dtos.CreateTransactionDto{
+		AccountId:    requestModel.AccountId,
+		InvestmentId: requestModel.InvestmentID,
 		Ticker:       requestModel.Ticker,
 		TradingDate: pgtype.Timestamp{
 			Time:  tradingDate,
 			Valid: true,
 		},
-		Trade:           requestModel.Trade,
-		Volume:          requestModel.Volume,
-		OrderPrice:      requestModel.OrderPrice,
-		MatchVolume:     requestModel.MatchVolume,
-		MatchPrice:      requestModel.MatchPrice,
-		MatchValue:      requestModel.MatchValue,
-		Fee:             requestModel.Fee,
-		Tax:             requestModel.Tax,
-		Cost:            requestModel.Cost,
-		CostOfGoodsSold: requestModel.CostOfGoodsSold,
-		Return:          requestModel.Return,
-		Status:          requestModel.Status,
+		Trade:       db.TradeType(requestModel.Trade),
+		Volume:      requestModel.Volume,
+		OrderPrice:  requestModel.OrderPrice,
+		MatchVolume: requestModel.MatchVolume,
+		MatchPrice:  requestModel.MatchPrice,
+		Fee:         requestModel.Fee,
+		Tax:         requestModel.Tax,
+		Status:      requestModel.Status,
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, errorResponse(err))
