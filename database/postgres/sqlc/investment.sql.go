@@ -73,48 +73,6 @@ func (q *Queries) CreateInvestment(ctx context.Context, arg CreateInvestmentPara
 	return i, err
 }
 
-const getAllInvestment = `-- name: GetAllInvestment :many
-SELECT id, account_id, ticker, company_name, buy_volume, buy_value, capital_cost, market_price, sell_volume, sell_value, current_volume, description, status, fee, tax, updated_date from investments
-ORDER BY ticker
-`
-
-func (q *Queries) GetAllInvestment(ctx context.Context) ([]Investment, error) {
-	rows, err := q.db.Query(ctx, getAllInvestment)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Investment
-	for rows.Next() {
-		var i Investment
-		if err := rows.Scan(
-			&i.ID,
-			&i.AccountID,
-			&i.Ticker,
-			&i.CompanyName,
-			&i.BuyVolume,
-			&i.BuyValue,
-			&i.CapitalCost,
-			&i.MarketPrice,
-			&i.SellVolume,
-			&i.SellValue,
-			&i.CurrentVolume,
-			&i.Description,
-			&i.Status,
-			&i.Fee,
-			&i.Tax,
-			&i.UpdatedDate,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const getInvestmentById = `-- name: GetInvestmentById :one
 select id, account_id, ticker, company_name, buy_volume, buy_value, capital_cost, market_price, sell_volume, sell_value, current_volume, description, status, fee, tax, updated_date from investments
 where id=$1
@@ -180,6 +138,62 @@ where account_id=$1
 
 func (q *Queries) GetInvestmentsByAccountId(ctx context.Context, accountID int64) ([]Investment, error) {
 	rows, err := q.db.Query(ctx, getInvestmentsByAccountId, accountID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Investment
+	for rows.Next() {
+		var i Investment
+		if err := rows.Scan(
+			&i.ID,
+			&i.AccountID,
+			&i.Ticker,
+			&i.CompanyName,
+			&i.BuyVolume,
+			&i.BuyValue,
+			&i.CapitalCost,
+			&i.MarketPrice,
+			&i.SellVolume,
+			&i.SellValue,
+			&i.CurrentVolume,
+			&i.Description,
+			&i.Status,
+			&i.Fee,
+			&i.Tax,
+			&i.UpdatedDate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const searchInvestmentPaging = `-- name: SearchInvestmentPaging :many
+SELECT id, account_id, ticker, company_name, buy_volume, buy_value, capital_cost, market_price, sell_volume, sell_value, current_volume, description, status, fee, tax, updated_date from investments
+WHERE ticker ILIKE $1::text or company_name ILIKE $1::text
+ORDER BY $2::text
+OFFSET $3::int LIMIT $4::int
+`
+
+type SearchInvestmentPagingParams struct {
+	SearchText string `json:"search_text"`
+	OrderBy    string `json:"order_by"`
+	FromOffset int32  `json:"from_offset"`
+	TakeLimit  int32  `json:"take_limit"`
+}
+
+func (q *Queries) SearchInvestmentPaging(ctx context.Context, arg SearchInvestmentPagingParams) ([]Investment, error) {
+	rows, err := q.db.Query(ctx, searchInvestmentPaging,
+		arg.SearchText,
+		arg.OrderBy,
+		arg.FromOffset,
+		arg.TakeLimit,
+	)
 	if err != nil {
 		return nil, err
 	}

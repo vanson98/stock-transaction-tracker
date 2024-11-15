@@ -3,9 +3,11 @@ insert into investments(account_id,ticker,company_name,buy_volume,buy_value,capi
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 RETURNING *;
 
--- name: GetAllInvestment :many
+-- name: SearchInvestmentPaging :many
 SELECT * from investments
-ORDER BY ticker;
+WHERE ticker ILIKE @search_text::text or company_name ILIKE @search_text::text
+ORDER BY @order_by::text
+OFFSET @from_offset::int LIMIT @take_limit::int;
 
 -- name: GetInvestmentByTicker :one
 SELECT * from investments
