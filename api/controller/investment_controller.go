@@ -8,6 +8,7 @@ import (
 	sv_interface "stt/services/interfaces"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -35,8 +36,9 @@ func (ic *InvestmentController) Create(c *gin.Context) {
 
 	// check investment exist
 	ivm, err := ic.investmentService.GetByTicker(c, createInvestmentModel.Ticker)
-	if err != nil {
+	if err != nil && err != pgx.ErrNoRows {
 		c.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
 	} else if ivm.ID > 0 && err == nil {
 		err := fmt.Errorf("investment already exist")
 		c.JSON(http.StatusBadRequest, errorResponse(err))
