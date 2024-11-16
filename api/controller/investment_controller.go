@@ -44,7 +44,7 @@ func (ic *InvestmentController) Search(c *gin.Context) {
 	}
 	totalResult, err := ic.investmentService.Count(c, db.CountInvestmentParams{
 		AccountID:  requestModel.AccountId,
-		SearchText: requestModel.SearchText,
+		SearchText: searchPram.SearchText,
 	})
 	if err != nil && err != pgx.ErrNoRows {
 		c.JSON(http.StatusInternalServerError, errorResponse(err))

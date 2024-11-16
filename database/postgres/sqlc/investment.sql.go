@@ -13,7 +13,7 @@ import (
 
 const countInvestment = `-- name: CountInvestment :one
 SELECT COUNT(*) from investments
-WHERE account_id=$1 AND (ticker ILIKE $2::text or company_name ILIKE $2::text)
+WHERE account_id=$1 AND (ticker ILIKE $2::text OR company_name ILIKE $2::text)
 `
 
 type CountInvestmentParams struct {
@@ -194,10 +194,10 @@ const searchInvestmentPaging = `-- name: SearchInvestmentPaging :many
 SELECT id, account_id, ticker, company_name, buy_volume, buy_value, capital_cost, market_price, sell_volume, sell_value, current_volume, description, status, fee, tax, updated_date from investments
 WHERE account_id=$1 AND (ticker ILIKE $2::text OR company_name ILIKE $2::text)
 ORDER BY 
-    CASE WHEN $3::text = 'ticker' AND $4::text = 'asc' THEN ticker END ASC,
-    CASE WHEN $3::text = 'ticker' AND $4::text = 'desc' THEN ticker END DESC,
-    CASE WHEN $3::text = 'status' AND $4::text = 'asc' THEN "status" END ASC,
-    CASE WHEN $3::text = 'status' AND $4::text = 'desc' THEN "status" END DESC
+    CASE WHEN $3::text = 'ticker' AND $4::text = 'ascending' THEN ticker END ASC,
+    CASE WHEN $3::text = 'ticker' AND $4::text = 'descending' THEN ticker END DESC,
+    CASE WHEN $3::text = 'status' AND $4::text = 'ascending' THEN "status" END ASC,
+    CASE WHEN $3::text = 'status' AND $4::text = 'descending' THEN "status" END DESC
 OFFSET $5::int LIMIT $6::int
 `
 
