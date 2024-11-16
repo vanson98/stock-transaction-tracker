@@ -11,6 +11,23 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countInvestment = `-- name: CountInvestment :one
+SELECT COUNT(*) from investments
+WHERE account_id=$1 AND (ticker ILIKE $2::text or company_name ILIKE $2::text)
+`
+
+type CountInvestmentParams struct {
+	AccountID  int64  `json:"account_id"`
+	SearchText string `json:"search_text"`
+}
+
+func (q *Queries) CountInvestment(ctx context.Context, arg CountInvestmentParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countInvestment, arg.AccountID, arg.SearchText)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createInvestment = `-- name: CreateInvestment :one
 insert into investments(account_id,ticker,company_name,buy_volume,buy_value,capital_cost,market_price,sell_volume,sell_value,current_volume,description,status,fee,tax)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
@@ -175,22 +192,30 @@ func (q *Queries) GetInvestmentsByAccountId(ctx context.Context, accountID int64
 
 const searchInvestmentPaging = `-- name: SearchInvestmentPaging :many
 SELECT id, account_id, ticker, company_name, buy_volume, buy_value, capital_cost, market_price, sell_volume, sell_value, current_volume, description, status, fee, tax, updated_date from investments
-WHERE ticker ILIKE $1::text or company_name ILIKE $1::text
-ORDER BY $2::text
-OFFSET $3::int LIMIT $4::int
+WHERE account_id=$1 AND (ticker ILIKE $2::text OR company_name ILIKE $2::text)
+ORDER BY 
+    CASE WHEN $3::text = 'ticker' AND $4::text = 'asc' THEN ticker END ASC,
+    CASE WHEN $3::text = 'ticker' AND $4::text = 'desc' THEN ticker END DESC,
+    CASE WHEN $3::text = 'status' AND $4::text = 'asc' THEN "status" END ASC,
+    CASE WHEN $3::text = 'status' AND $4::text = 'desc' THEN "status" END DESC
+OFFSET $5::int LIMIT $6::int
 `
 
 type SearchInvestmentPagingParams struct {
+	AccountID  int64  `json:"account_id"`
 	SearchText string `json:"search_text"`
 	OrderBy    string `json:"order_by"`
+	SortType   string `json:"sort_type"`
 	FromOffset int32  `json:"from_offset"`
 	TakeLimit  int32  `json:"take_limit"`
 }
 
 func (q *Queries) SearchInvestmentPaging(ctx context.Context, arg SearchInvestmentPagingParams) ([]Investment, error) {
 	rows, err := q.db.Query(ctx, searchInvestmentPaging,
+		arg.AccountID,
 		arg.SearchText,
 		arg.OrderBy,
+		arg.SortType,
 		arg.FromOffset,
 		arg.TakeLimit,
 	)

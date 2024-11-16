@@ -22,9 +22,40 @@ func InitInvestmentController(investmentService sv_interface.IInvestmentService)
 	}
 }
 
-// func (ic *InvestmentController) GetAll(c *gin.Context) {
-// 	ic.investmentService.GetAll(c)
-// }
+func (ic *InvestmentController) Search(c *gin.Context) {
+	var requestModel investment_model.SearchInvestmentModel
+	err := c.ShouldBindQuery(&requestModel)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	var searchPram = db.SearchInvestmentPagingParams{
+		AccountID:  requestModel.AccountId,
+		SearchText: "%" + requestModel.SearchText + "%",
+		OrderBy:    requestModel.OrderBy,
+		SortType:   requestModel.SortType,
+		TakeLimit:  int32(requestModel.PageSize),
+		FromOffset: (requestModel.Page - 1) * requestModel.PageSize,
+	}
+	searchResult, err := ic.investmentService.SearchPaging(c, searchPram)
+	if err != nil && err != pgx.ErrNoRows {
+		c.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+	totalResult, err := ic.investmentService.Count(c, db.CountInvestmentParams{
+		AccountID:  requestModel.AccountId,
+		SearchText: requestModel.SearchText,
+	})
+	if err != nil && err != pgx.ErrNoRows {
+		c.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, investment_model.SearchInvestmentResponseModel{
+		Investments: searchResult,
+		TotalItems:  totalResult,
+	})
+}
 
 func (ic *InvestmentController) Create(c *gin.Context) {
 	var createInvestmentModel investment_model.CreateInvestmentModel
