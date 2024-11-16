@@ -3,9 +3,19 @@ insert into investments(account_id,ticker,company_name,buy_volume,buy_value,capi
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 RETURNING *;
 
--- name: GetAllInvestment :many
+-- name: SearchInvestmentPaging :many
 SELECT * from investments
-ORDER BY ticker;
+WHERE account_id=sqlc.arg(account_id) AND (ticker ILIKE @search_text::text OR company_name ILIKE @search_text::text)
+ORDER BY 
+    CASE WHEN @order_by::text = 'ticker' AND @sort_type::text = 'ascending' THEN ticker END ASC,
+    CASE WHEN @order_by::text = 'ticker' AND @sort_type::text = 'descending' THEN ticker END DESC,
+    CASE WHEN @order_by::text = 'status' AND @sort_type::text = 'ascending' THEN "status" END ASC,
+    CASE WHEN @order_by::text = 'status' AND @sort_type::text = 'descending' THEN "status" END DESC
+OFFSET @from_offset::int LIMIT @take_limit::int;
+
+-- name: CountInvestment :one
+SELECT COUNT(*) from investments
+WHERE account_id=sqlc.arg(account_id) AND (ticker ILIKE @search_text::text OR company_name ILIKE @search_text::text);
 
 -- name: GetInvestmentByTicker :one
 SELECT * from investments

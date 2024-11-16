@@ -10,6 +10,7 @@ import (
 
 type Querier interface {
 	AddAccountBalance(ctx context.Context, arg AddAccountBalanceParams) (Account, error)
+	CountInvestment(ctx context.Context, arg CountInvestmentParams) (int64, error)
 	CreateAccount(ctx context.Context, arg CreateAccountParams) (Account, error)
 	CreateEntry(ctx context.Context, arg CreateEntryParams) (Entry, error)
 	CreateInvestment(ctx context.Context, arg CreateInvestmentParams) (Investment, error)
@@ -20,7 +21,6 @@ type Querier interface {
 	GetAccountForUpdate(ctx context.Context, id int64) (Account, error)
 	GetAccountInfoById(ctx context.Context, id int64) (GetAccountInfoByIdRow, error)
 	GetAccountsPaging(ctx context.Context, arg GetAccountsPagingParams) ([]Account, error)
-	GetAllInvestment(ctx context.Context) ([]Investment, error)
 	GetEntryById(ctx context.Context, id int64) (Entry, error)
 	GetInvestmentById(ctx context.Context, id int64) (Investment, error)
 	GetInvestmentByTicker(ctx context.Context, ticker string) (Investment, error)
@@ -28,6 +28,7 @@ type Querier interface {
 	GetTransactionById(ctx context.Context, id int64) (Transaction, error)
 	GetUser(ctx context.Context, username string) (User, error)
 	ListAllAccount(ctx context.Context) ([]ListAllAccountRow, error)
+	SearchInvestmentPaging(ctx context.Context, arg SearchInvestmentPagingParams) ([]Investment, error)
 	UpdateInvestmentStatus(ctx context.Context, arg UpdateInvestmentStatusParams) error
 	UpdateInvestmentWhenBuying(ctx context.Context, arg UpdateInvestmentWhenBuyingParams) error
 }

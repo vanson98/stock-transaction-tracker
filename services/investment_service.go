@@ -19,6 +19,16 @@ func InitInvestmentService(store db.IStore, timeout time.Duration) sv_interface.
 	}
 }
 
+// CountSearchPaging implements sv_interface.IInvestmentService.
+func (ivs investmentService) Count(c context.Context, param db.CountInvestmentParams) (int64, error) {
+	return ivs.store.CountInvestment(c, param)
+}
+
+// SearchPaging implements sv_interface.IInvestmentService.
+func (ivs investmentService) SearchPaging(c context.Context, param db.SearchInvestmentPagingParams) ([]db.Investment, error) {
+	return ivs.store.SearchInvestmentPaging(c, param)
+}
+
 // Create implements domain.IInvestmentService.
 func (ivs investmentService) Create(c context.Context, param db.CreateInvestmentParams) (db.Investment, error) {
 	ctx, cancel := context.WithTimeout(c, ivs.contextTimeout)
