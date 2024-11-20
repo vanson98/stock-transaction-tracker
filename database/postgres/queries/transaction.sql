@@ -7,3 +7,9 @@ INSERT INTO transactions(investment_id,ticker,trading_date,trade,volume,order_pr
 VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
 RETURNING *;
 
+-- name: GetTransactionsPaging :many
+SELECT * FROM transactions
+WHERE ticker LIKE
+	CASE WHEN @ticker::text <> '' THEN @ticker::text ELSE '%%' END
+ORDER BY trading_date DESC
+OFFSET 0 LIMIT 10;

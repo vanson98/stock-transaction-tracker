@@ -9,4 +9,5 @@ import (
 type ITransactionService interface {
 	AddTransaction(ctx context.Context, arg dtos.CreateTransactionDto) (db.Transaction, error)
 	GetById(ctx context.Context, id int64) (db.Transaction, error)
+	GetPaging(ctx context.Context, ticker string) ([]db.Transaction, error)
 }

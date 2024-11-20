@@ -26,6 +26,7 @@ type Querier interface {
 	GetInvestmentByTicker(ctx context.Context, ticker string) (Investment, error)
 	GetInvestmentsByAccountId(ctx context.Context, accountID int64) ([]Investment, error)
 	GetTransactionById(ctx context.Context, id int64) (Transaction, error)
+	GetTransactionsPaging(ctx context.Context, ticker string) ([]Transaction, error)
 	GetUser(ctx context.Context, username string) (User, error)
 	ListAllAccount(ctx context.Context) ([]ListAllAccountRow, error)
 	SearchInvestmentPaging(ctx context.Context, arg SearchInvestmentPagingParams) ([]Investment, error)

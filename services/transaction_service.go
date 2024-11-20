@@ -22,6 +22,11 @@ func InitTransactionService(store db.IStore) sv_interface.ITransactionService {
 	}
 }
 
+// GetPaging implements sv_interface.ITransactionService.
+func (t *transactionService) GetPaging(ctx context.Context, ticker string) ([]db.Transaction, error) {
+	return t.store.GetTransactionsPaging(ctx,ticker)
+}
+
 // GetById implements sv_interface.ITransactionService.
 func (t *transactionService) GetById(ctx context.Context, id int64) (db.Transaction, error) {
 	return t.store.GetTransactionById(ctx, id)

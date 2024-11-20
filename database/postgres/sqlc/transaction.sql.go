@@ -103,3 +103,48 @@ func (q *Queries) GetTransactionById(ctx context.Context, id int64) (Transaction
 	)
 	return i, err
 }
+
+const getTransactionsPaging = `-- name: GetTransactionsPaging :many
+SELECT id, investment_id, ticker, trading_date, trade, volume, order_price, match_volume, match_price, match_value, fee, tax, cost, cost_of_goods_sold, return, status FROM transactions
+WHERE ticker LIKE
+	CASE WHEN $1::text <> '' THEN $1::text ELSE '%%' END
+ORDER BY trading_date DESC
+OFFSET 0 LIMIT 10
+`
+
+func (q *Queries) GetTransactionsPaging(ctx context.Context, ticker string) ([]Transaction, error) {
+	rows, err := q.db.Query(ctx, getTransactionsPaging, ticker)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Transaction
+	for rows.Next() {
+		var i Transaction
+		if err := rows.Scan(
+			&i.ID,
+			&i.InvestmentID,
+			&i.Ticker,
+			&i.TradingDate,
+			&i.Trade,
+			&i.Volume,
+			&i.OrderPrice,
+			&i.MatchVolume,
+			&i.MatchPrice,
+			&i.MatchValue,
+			&i.Fee,
+			&i.Tax,
+			&i.Cost,
+			&i.CostOfGoodsSold,
+			&i.Return,
+			&i.Status,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
