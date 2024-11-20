@@ -306,3 +306,35 @@ func (q *Queries) UpdateInvestmentWhenBuying(ctx context.Context, arg UpdateInve
 	)
 	return err
 }
+
+const updateInvestmentWhenSeling = `-- name: UpdateInvestmentWhenSeling :exec
+UPDATE investments
+SET sell_volume = sell_volume + $2,
+sell_value = sell_value + $3,
+current_volume = current_volume - $2,
+fee = fee + $4,
+tax = tax + $5, 
+updated_date = $6
+WHERE id = $1
+`
+
+type UpdateInvestmentWhenSelingParams struct {
+	ID                    int64            `json:"id"`
+	SellTransactionVolume int64            `json:"sell_transaction_volume"`
+	SellTransactionValue  int64            `json:"sell_transaction_value"`
+	TransactionFee        int64            `json:"transaction_fee"`
+	TransactionTax        int64            `json:"transaction_tax"`
+	UpdatedDate           pgtype.Timestamp `json:"updated_date"`
+}
+
+func (q *Queries) UpdateInvestmentWhenSeling(ctx context.Context, arg UpdateInvestmentWhenSelingParams) error {
+	_, err := q.db.Exec(ctx, updateInvestmentWhenSeling,
+		arg.ID,
+		arg.SellTransactionVolume,
+		arg.SellTransactionValue,
+		arg.TransactionFee,
+		arg.TransactionTax,
+		arg.UpdatedDate,
+	)
+	return err
+}

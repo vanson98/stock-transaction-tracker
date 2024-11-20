@@ -24,7 +24,7 @@ func InitTransactionService(store db.IStore) sv_interface.ITransactionService {
 
 // GetPaging implements sv_interface.ITransactionService.
 func (t *transactionService) GetPaging(ctx context.Context, ticker string) ([]db.Transaction, error) {
-	return t.store.GetTransactionsPaging(ctx,ticker)
+	return t.store.GetTransactionsPaging(ctx, ticker)
 }
 
 // GetById implements sv_interface.ITransactionService.
@@ -142,5 +142,72 @@ func (t *transactionService) insertBuyingTransaction(ctx context.Context, arg dt
 }
 
 func (t *transactionService) insertSellingTransaction(ctx context.Context, arg dtos.CreateTransactionDto) (db.Transaction, error) {
-	panic("not implemented")
+	result, err := t.store.ExecTx(ctx, func(query *db.Queries) (interface{}, error) {
+		// get investment
+		investment, err := query.GetInvestmentById(ctx, arg.InvestmentId)
+		if err != nil {
+			return db.Transaction{}, err
+		}
+
+		// create a transaction
+		transaction, err := t.store.CreateTransaction(ctx, db.CreateTransactionParams{
+			InvestmentID:    arg.InvestmentId,
+			Ticker:          arg.Ticker,
+			TradingDate:     arg.TradingDate,
+			Trade:           arg.Trade,
+			Volume:          arg.Volume,
+			OrderPrice:      arg.OrderPrice,
+			MatchVolume:     arg.MatchVolume,
+			MatchPrice:      arg.MatchPrice,
+			MatchValue:      arg.MatchPrice * arg.MatchVolume,
+			Fee:             arg.Fee,
+			Tax:             arg.Tax,
+			Cost:            investment.CapitalCost,
+			CostOfGoodsSold: investment.CapitalCost * arg.MatchVolume,
+			Return:          (arg.MatchPrice * arg.MatchVolume) - arg.Fee - arg.Tax - (investment.CapitalCost * arg.MatchVolume),
+			Status:          arg.Status,
+		})
+		if err != nil {
+			return db.Transaction{}, err
+		}
+
+		// create account's entry
+		entry, err := query.CreateEntry(ctx, db.CreateEntryParams{
+			AccountID: arg.AccountId,
+			Amount:    transaction.MatchValue - transaction.Fee - transaction.Tax,
+		})
+		if err != nil {
+			return db.Transaction{}, err
+		}
+
+		// update account' balance
+		query.AddAccountBalance(ctx, db.AddAccountBalanceParams{
+			Amount: entry.Amount,
+			ID:     arg.AccountId,
+		})
+
+		// update investment
+		err = query.UpdateInvestmentWhenSeling(ctx, db.UpdateInvestmentWhenSelingParams{
+			ID:                    transaction.InvestmentID,
+			SellTransactionVolume: transaction.MatchVolume,
+			SellTransactionValue:  transaction.MatchValue,
+			TransactionFee:        transaction.Fee,
+			TransactionTax:        transaction.Tax,
+			UpdatedDate:           arg.TradingDate,
+		})
+		if err != nil {
+			return db.Transaction{}, err
+		}
+
+		return transaction, nil
+	})
+	if err != nil {
+		return db.Transaction{}, nil
+	}
+	transaction, ok := result.(db.Transaction)
+	if !ok {
+		err = fmt.Errorf("can not convert db tx result to transaction type")
+		return db.Transaction{}, err
+	}
+	return transaction, err
 }

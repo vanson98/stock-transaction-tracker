@@ -45,5 +45,15 @@ tax = $7,
 updated_date = $8
 where id = $1;
 
+-- name: UpdateInvestmentWhenSeling :exec
+UPDATE investments
+SET sell_volume = sell_volume + @sell_transaction_volume,
+sell_value = sell_value + @sell_transaction_value,
+current_volume = current_volume - @sell_transaction_volume,
+fee = fee + @transaction_fee,
+tax = tax + @transaction_tax, 
+updated_date = sqlc.arg(updated_date)
+WHERE id = $1;
+
 
 
