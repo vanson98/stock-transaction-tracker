@@ -36,9 +36,10 @@ func (t *transactionService) GetById(ctx context.Context, id int64) (db.Transact
 func (t *transactionService) AddTransaction(ctx context.Context, arg dtos.CreateTransactionDto) (db.Transaction, error) {
 	if arg.Trade == db.TradeTypeBUY {
 		return t.insertBuyingTransaction(ctx, arg)
-	} else {
+	} else if arg.Trade == db.TradeTypeSELL {
 		return t.insertSellingTransaction(ctx, arg)
 	}
+	return db.Transaction{}, fmt.Errorf("trading type is not valid")
 }
 
 func (t *transactionService) insertBuyingTransaction(ctx context.Context, arg dtos.CreateTransactionDto) (db.Transaction, error) {
@@ -120,6 +121,7 @@ func (t *transactionService) insertBuyingTransaction(ctx context.Context, arg dt
 			CurrentVolume: investment.CurrentVolume,
 			Fee:           investment.Fee,
 			Tax:           investment.Tax,
+			Status:        db.InvestmentStatusActive,
 			UpdatedDate: pgtype.Timestamp{
 				Time:  time.Now(),
 				Valid: true,
@@ -146,6 +148,10 @@ func (t *transactionService) insertSellingTransaction(ctx context.Context, arg d
 		// get investment
 		investment, err := query.GetInvestmentById(ctx, arg.InvestmentId)
 		if err != nil {
+			return db.Transaction{}, err
+		}
+		if investment.CurrentVolume < arg.MatchVolume {
+			err = fmt.Errorf("current volume is less than match volume")
 			return db.Transaction{}, err
 		}
 
@@ -175,17 +181,20 @@ func (t *transactionService) insertSellingTransaction(ctx context.Context, arg d
 		entry, err := query.CreateEntry(ctx, db.CreateEntryParams{
 			AccountID: arg.AccountId,
 			Amount:    transaction.MatchValue - transaction.Fee - transaction.Tax,
+			Type:      db.EntryTypeIT,
 		})
 		if err != nil {
 			return db.Transaction{}, err
 		}
 
-		// update account' balance
+		// update account's balance
 		query.AddAccountBalance(ctx, db.AddAccountBalanceParams{
 			Amount: entry.Amount,
 			ID:     arg.AccountId,
 		})
-
+		if investment.CurrentVolume-transaction.MatchVolume == 0 {
+			investment.Status = db.InvestmentStatusBuyout
+		}
 		// update investment
 		err = query.UpdateInvestmentWhenSeling(ctx, db.UpdateInvestmentWhenSelingParams{
 			ID:                    transaction.InvestmentID,
@@ -193,7 +202,11 @@ func (t *transactionService) insertSellingTransaction(ctx context.Context, arg d
 			SellTransactionValue:  transaction.MatchValue,
 			TransactionFee:        transaction.Fee,
 			TransactionTax:        transaction.Tax,
-			UpdatedDate:           arg.TradingDate,
+			UpdatedDate: pgtype.Timestamp{
+				Time:  time.Now(),
+				Valid: true,
+			},
+			Status: investment.Status,
 		})
 		if err != nil {
 			return db.Transaction{}, err
@@ -202,7 +215,7 @@ func (t *transactionService) insertSellingTransaction(ctx context.Context, arg d
 		return transaction, nil
 	})
 	if err != nil {
-		return db.Transaction{}, nil
+		return db.Transaction{}, err
 	}
 	transaction, ok := result.(db.Transaction)
 	if !ok {

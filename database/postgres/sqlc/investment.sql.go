@@ -278,7 +278,8 @@ capital_cost = $4,
 current_volume = $5,
 fee = $6,
 tax = $7,
-updated_date = $8
+updated_date = $8, 
+status=$9
 where id = $1
 `
 
@@ -291,6 +292,7 @@ type UpdateInvestmentWhenBuyingParams struct {
 	Fee           int64            `json:"fee"`
 	Tax           int64            `json:"tax"`
 	UpdatedDate   pgtype.Timestamp `json:"updated_date"`
+	Status        InvestmentStatus `json:"status"`
 }
 
 func (q *Queries) UpdateInvestmentWhenBuying(ctx context.Context, arg UpdateInvestmentWhenBuyingParams) error {
@@ -303,6 +305,7 @@ func (q *Queries) UpdateInvestmentWhenBuying(ctx context.Context, arg UpdateInve
 		arg.Fee,
 		arg.Tax,
 		arg.UpdatedDate,
+		arg.Status,
 	)
 	return err
 }
@@ -314,7 +317,8 @@ sell_value = sell_value + $3,
 current_volume = current_volume - $2,
 fee = fee + $4,
 tax = tax + $5, 
-updated_date = $6
+status= $6,
+updated_date = $7
 WHERE id = $1
 `
 
@@ -324,6 +328,7 @@ type UpdateInvestmentWhenSelingParams struct {
 	SellTransactionValue  int64            `json:"sell_transaction_value"`
 	TransactionFee        int64            `json:"transaction_fee"`
 	TransactionTax        int64            `json:"transaction_tax"`
+	Status                InvestmentStatus `json:"status"`
 	UpdatedDate           pgtype.Timestamp `json:"updated_date"`
 }
 
@@ -334,6 +339,7 @@ func (q *Queries) UpdateInvestmentWhenSeling(ctx context.Context, arg UpdateInve
 		arg.SellTransactionValue,
 		arg.TransactionFee,
 		arg.TransactionTax,
+		arg.Status,
 		arg.UpdatedDate,
 	)
 	return err
