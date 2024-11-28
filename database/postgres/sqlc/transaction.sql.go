@@ -11,6 +11,27 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countTransactions = `-- name: CountTransactions :one
+SELECT COUNT(T.id)
+FROM investments AS I
+INNER JOIN transactions AS T ON I.id = T.investment_id
+WHERE I.account_id = $1 AND
+ 	  T.ticker LIKE 
+	  	CASE WHEN $2::text = '' THEN '%%' ELSE $2::text END
+`
+
+type CountTransactionsParams struct {
+	AccountID int64  `json:"account_id"`
+	Ticker    string `json:"ticker"`
+}
+
+func (q *Queries) CountTransactions(ctx context.Context, arg CountTransactionsParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countTransactions, arg.AccountID, arg.Ticker)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createTransaction = `-- name: CreateTransaction :one
 INSERT INTO transactions(investment_id,ticker,trading_date,trade,volume,order_price,match_volume,match_price,match_value,fee,tax,"cost","cost_of_goods_sold","return","status")
 VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
@@ -105,27 +126,59 @@ func (q *Queries) GetTransactionById(ctx context.Context, id int64) (Transaction
 }
 
 const getTransactionsPaging = `-- name: GetTransactionsPaging :many
-SELECT id, investment_id, ticker, trading_date, trade, volume, order_price, match_volume, match_price, match_value, fee, tax, cost, cost_of_goods_sold, return, status FROM transactions
-WHERE ticker LIKE
-	CASE WHEN $1::text <> '' THEN $1::text ELSE '%%' END
+SELECT T.id, T.trading_date, T.ticker, T.trade, T.volume, T.order_price, T.match_volume, T.match_price, T.match_value, T.fee, T.tax, T."cost", T.cost_of_goods_sold, T."return", T.status
+FROM investments AS I
+INNER JOIN transactions AS T ON I.id = T.investment_id
+WHERE I.account_id = $1 AND
+ 	  T.ticker LIKE 
+	  	CASE WHEN $2::text = '' THEN '%%' ELSE $2::text END
 ORDER BY trading_date DESC
-OFFSET 0 LIMIT 10
+OFFSET $3::int LIMIT $4::int
 `
 
-func (q *Queries) GetTransactionsPaging(ctx context.Context, ticker string) ([]Transaction, error) {
-	rows, err := q.db.Query(ctx, getTransactionsPaging, ticker)
+type GetTransactionsPagingParams struct {
+	AccountID  int64  `json:"account_id"`
+	Ticker     string `json:"ticker"`
+	FromOffset int32  `json:"from_offset"`
+	ToLimit    int32  `json:"to_limit"`
+}
+
+type GetTransactionsPagingRow struct {
+	ID              int64             `json:"id"`
+	TradingDate     pgtype.Timestamp  `json:"trading_date"`
+	Ticker          string            `json:"ticker"`
+	Trade           TradeType         `json:"trade"`
+	Volume          int64             `json:"volume"`
+	OrderPrice      int64             `json:"order_price"`
+	MatchVolume     int64             `json:"match_volume"`
+	MatchPrice      int64             `json:"match_price"`
+	MatchValue      int64             `json:"match_value"`
+	Fee             int64             `json:"fee"`
+	Tax             int64             `json:"tax"`
+	Cost            int64             `json:"cost"`
+	CostOfGoodsSold int64             `json:"cost_of_goods_sold"`
+	Return          int64             `json:"return"`
+	Status          TransactionStatus `json:"status"`
+}
+
+func (q *Queries) GetTransactionsPaging(ctx context.Context, arg GetTransactionsPagingParams) ([]GetTransactionsPagingRow, error) {
+	rows, err := q.db.Query(ctx, getTransactionsPaging,
+		arg.AccountID,
+		arg.Ticker,
+		arg.FromOffset,
+		arg.ToLimit,
+	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Transaction
+	var items []GetTransactionsPagingRow
 	for rows.Next() {
-		var i Transaction
+		var i GetTransactionsPagingRow
 		if err := rows.Scan(
 			&i.ID,
-			&i.InvestmentID,
-			&i.Ticker,
 			&i.TradingDate,
+			&i.Ticker,
 			&i.Trade,
 			&i.Volume,
 			&i.OrderPrice,

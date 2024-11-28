@@ -21,7 +21,6 @@ func TestAddTransaction(t *testing.T) {
 		{
 			AccountId:    account.ID,
 			InvestmentId: investment.ID,
-			Ticker:       investment.Ticker,
 			TradingDate: pgtype.Timestamp{
 				Time:  time.Date(2024, 07, 31, 9, 0, 0, 0, time.UTC),
 				Valid: true,
@@ -38,7 +37,6 @@ func TestAddTransaction(t *testing.T) {
 		{
 			AccountId:    account.ID,
 			InvestmentId: investment.ID,
-			Ticker:       investment.Ticker,
 			TradingDate: pgtype.Timestamp{
 				Time:  time.Date(2024, 8, 2, 9, 0, 0, 0, time.UTC),
 				Valid: true,
@@ -55,7 +53,6 @@ func TestAddTransaction(t *testing.T) {
 		{
 			AccountId:    account.ID,
 			InvestmentId: investment.ID,
-			Ticker:       investment.Ticker,
 			TradingDate: pgtype.Timestamp{
 				Time:  time.Date(2024, 8, 3, 10, 0, 0, 0, time.UTC),
 				Valid: true,
@@ -75,7 +72,7 @@ func TestAddTransaction(t *testing.T) {
 		require.NoError(t, err)
 		require.NotEmpty(t, transaction)
 		require.Equal(t, transaction.InvestmentID, investment.ID)
-		require.Equal(t, transaction.Ticker, param.Ticker)
+		require.Equal(t, transaction.Ticker, investment.Ticker)
 		require.Equal(t, transaction.TradingDate, param.TradingDate)
 		require.Equal(t, transaction.Trade, param.Trade)
 		require.Equal(t, transaction.Volume, param.Volume)

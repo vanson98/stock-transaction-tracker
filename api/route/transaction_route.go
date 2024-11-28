@@ -9,5 +9,6 @@ import (
 
 func InitTransactionRouter(group *gin.RouterGroup, transactionService sv_interface.ITransactionService) {
 	transactionController := controller.InitTransactionController(transactionService)
+	group.GET("/transactions", transactionController.GetPaging)
 	group.POST("/transactions", transactionController.CreateNewTransaction)
 }

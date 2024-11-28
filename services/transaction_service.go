@@ -23,8 +23,13 @@ func InitTransactionService(store db.IStore) sv_interface.ITransactionService {
 }
 
 // GetPaging implements sv_interface.ITransactionService.
-func (t *transactionService) GetPaging(ctx context.Context, ticker string) ([]db.Transaction, error) {
-	return t.store.GetTransactionsPaging(ctx, ticker)
+func (t *transactionService) GetPaging(ctx context.Context, param db.GetTransactionsPagingParams) ([]db.GetTransactionsPagingRow, error) {
+	return t.store.GetTransactionsPaging(ctx, param)
+}
+
+// CountTransaction implements sv_interface.ITransactionService.
+func (t *transactionService) CountTransaction(ctx context.Context, param db.CountTransactionsParams) (int64, error) {
+	return t.store.CountTransactions(ctx, param)
 }
 
 // GetById implements sv_interface.ITransactionService.
@@ -87,7 +92,7 @@ func (t *transactionService) insertBuyingTransaction(ctx context.Context, arg dt
 		// create transaction
 		transaction, err := t.store.CreateTransaction(ctx, db.CreateTransactionParams{
 			InvestmentID:    arg.InvestmentId,
-			Ticker:          arg.Ticker,
+			Ticker:          investment.Ticker,
 			TradingDate:     arg.TradingDate,
 			Trade:           arg.Trade,
 			Volume:          arg.Volume,
@@ -158,7 +163,7 @@ func (t *transactionService) insertSellingTransaction(ctx context.Context, arg d
 		// create a transaction
 		transaction, err := t.store.CreateTransaction(ctx, db.CreateTransactionParams{
 			InvestmentID:    arg.InvestmentId,
-			Ticker:          arg.Ticker,
+			Ticker:          investment.Ticker,
 			TradingDate:     arg.TradingDate,
 			Trade:           arg.Trade,
 			Volume:          arg.Volume,
@@ -170,7 +175,7 @@ func (t *transactionService) insertSellingTransaction(ctx context.Context, arg d
 			Tax:             arg.Tax,
 			Cost:            investment.CapitalCost,
 			CostOfGoodsSold: investment.CapitalCost * arg.MatchVolume,
-			Return:          (arg.MatchPrice * arg.MatchVolume) - arg.Fee - arg.Tax - (investment.CapitalCost * arg.MatchVolume),
+			Return:          (arg.MatchPrice-investment.CapitalCost)*arg.MatchVolume - arg.Fee - arg.Tax,
 			Status:          arg.Status,
 		})
 		if err != nil {
