@@ -8,7 +8,7 @@ VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
 RETURNING *;
 
 -- name: GetTransactionsPaging :many
-SELECT T.id, T.trading_date, T.ticker, T.trade, T.volume, T.order_price, T.match_volume, T.match_price, T.match_value, T.fee, T.tax, T."cost", T.cost_of_goods_sold, T."return", T.status
+SELECT T.id, to_char(T.trading_date,'dd/mm/yyyy') as trading_date, T.ticker, T.trade, T.volume, T.order_price, T.match_volume, T.match_price, T.match_value, T.fee, T.tax, T."cost", T.cost_of_goods_sold, T."return", T.status
 FROM investments AS I
 INNER JOIN transactions AS T ON I.id = T.investment_id
 WHERE I.account_id = @account_id AND

@@ -126,7 +126,7 @@ func (q *Queries) GetTransactionById(ctx context.Context, id int64) (Transaction
 }
 
 const getTransactionsPaging = `-- name: GetTransactionsPaging :many
-SELECT T.id, T.trading_date, T.ticker, T.trade, T.volume, T.order_price, T.match_volume, T.match_price, T.match_value, T.fee, T.tax, T."cost", T.cost_of_goods_sold, T."return", T.status
+SELECT T.id, to_char(T.trading_date,'dd/mm/yyyy') as trading_date, T.ticker, T.trade, T.volume, T.order_price, T.match_volume, T.match_price, T.match_value, T.fee, T.tax, T."cost", T.cost_of_goods_sold, T."return", T.status
 FROM investments AS I
 INNER JOIN transactions AS T ON I.id = T.investment_id
 WHERE I.account_id = $1 AND
@@ -145,7 +145,7 @@ type GetTransactionsPagingParams struct {
 
 type GetTransactionsPagingRow struct {
 	ID              int64             `json:"id"`
-	TradingDate     pgtype.Timestamp  `json:"trading_date"`
+	TradingDate     string            `json:"trading_date"`
 	Ticker          string            `json:"ticker"`
 	Trade           TradeType         `json:"trade"`
 	Volume          int64             `json:"volume"`

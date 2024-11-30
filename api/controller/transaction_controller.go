@@ -61,7 +61,7 @@ func (tc transactionController) CreateNewTransaction(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
-	tradingDate, err := time.Parse("2006-01-02 15:04:05", requestModel.TradingDate)
+	tradingDate, err := time.Parse("2006-01-02T15:04:05Z", requestModel.TradingDate)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, errorResponse(err))
 		return
@@ -74,8 +74,8 @@ func (tc transactionController) CreateNewTransaction(c *gin.Context) {
 			Valid: true,
 		},
 		Trade:       db.TradeType(requestModel.Trade),
-		Volume:      requestModel.Volume,
-		OrderPrice:  requestModel.OrderPrice,
+		Volume:      requestModel.MatchVolume,
+		OrderPrice:  requestModel.MatchPrice,
 		MatchVolume: requestModel.MatchVolume,
 		MatchPrice:  requestModel.MatchPrice,
 		Fee:         requestModel.Fee,

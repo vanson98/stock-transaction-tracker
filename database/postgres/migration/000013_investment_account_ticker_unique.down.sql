@@ -1,0 +1,1 @@
+ALTER TABLE investments DROP CONSTRAINT "accountid_ticker_unique";
