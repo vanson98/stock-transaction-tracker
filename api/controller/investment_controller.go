@@ -2,6 +2,7 @@ package controller
 
 import (
 	"net/http"
+	"strconv"
 	investment_model "stt/api/models/investment"
 	db "stt/database/postgres/sqlc"
 	sv_interface "stt/services/interfaces"
@@ -89,5 +90,24 @@ func (ic *InvestmentController) Create(c *gin.Context) {
 		return
 	}
 
+	c.JSON(http.StatusOK, investment)
+}
+
+func (ic *InvestmentController) GetById(c *gin.Context) {
+	idParam, ok := c.Params.Get("id")
+	if !ok {
+		c.JSON(http.StatusBadRequest, "id is required")
+		return
+	}
+	investmentId, err := strconv.Atoi(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	investment, err := ic.investmentService.GetById(c, int64(investmentId))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
 	c.JSON(http.StatusOK, investment)
 }
