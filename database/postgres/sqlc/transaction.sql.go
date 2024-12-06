@@ -132,13 +132,21 @@ INNER JOIN transactions AS T ON I.id = T.investment_id
 WHERE I.account_id = $1 AND
  	  T.ticker LIKE 
 	  	CASE WHEN $2::text = '' THEN '%%' ELSE $2::text END
-ORDER BY trading_date DESC
-OFFSET $3::int LIMIT $4::int
+ORDER BY 
+	CASE WHEN $3::text = 'trading_date' AND $4::text = 'descending' THEN T.trading_date END DESC,
+	CASE WHEN $3::text = 'cost_of_goods_sold' AND $4::text = 'descending' THEN T.cost_of_goods_sold END DESC,
+	CASE WHEN $3::text = 'return' AND $4::text = 'descending' THEN T.return END DESC,
+	CASE WHEN $3::text = 'trading_date' AND $4::text = 'ascending' THEN T.trading_date END ASC,
+	CASE WHEN $3::text = 'cost_of_goods_sold' AND $4::text = 'ascending' THEN T.cost_of_goods_sold END ASC,
+	CASE WHEN $3::text= 'return' AND $4::text = 'ascending' THEN T.return END ASC
+OFFSET $5::int LIMIT $6::int
 `
 
 type GetTransactionsPagingParams struct {
 	AccountID  int64  `json:"account_id"`
 	Ticker     string `json:"ticker"`
+	OrderBy    string `json:"order_by"`
+	OrderType  string `json:"order_type"`
 	FromOffset int32  `json:"from_offset"`
 	ToLimit    int32  `json:"to_limit"`
 }
@@ -165,6 +173,8 @@ func (q *Queries) GetTransactionsPaging(ctx context.Context, arg GetTransactions
 	rows, err := q.db.Query(ctx, getTransactionsPaging,
 		arg.AccountID,
 		arg.Ticker,
+		arg.OrderBy,
+		arg.OrderType,
 		arg.FromOffset,
 		arg.ToLimit,
 	)

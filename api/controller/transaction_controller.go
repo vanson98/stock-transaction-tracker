@@ -34,6 +34,8 @@ func (tc transactionController) GetPaging(c *gin.Context) {
 		ToLimit:    requestModel.PageSize,
 		Ticker:     requestModel.Ticker,
 		FromOffset: (requestModel.Page - 1) * requestModel.PageSize,
+		OrderBy:    requestModel.OrderBy,
+		OrderType:  requestModel.OrderType,
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, errorResponse(err))

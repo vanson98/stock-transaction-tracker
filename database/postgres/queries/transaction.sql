@@ -14,7 +14,13 @@ INNER JOIN transactions AS T ON I.id = T.investment_id
 WHERE I.account_id = @account_id AND
  	  T.ticker LIKE 
 	  	CASE WHEN @ticker::text = '' THEN '%%' ELSE @ticker::text END
-ORDER BY trading_date DESC
+ORDER BY 
+	CASE WHEN @order_by::text = 'trading_date' AND @order_type::text = 'descending' THEN T.trading_date END DESC,
+	CASE WHEN @order_by::text = 'cost_of_goods_sold' AND @order_type::text = 'descending' THEN T.cost_of_goods_sold END DESC,
+	CASE WHEN @order_by::text = 'return' AND @order_type::text = 'descending' THEN T.return END DESC,
+	CASE WHEN @order_by::text = 'trading_date' AND @order_type::text = 'ascending' THEN T.trading_date END ASC,
+	CASE WHEN @order_by::text = 'cost_of_goods_sold' AND @order_type::text = 'ascending' THEN T.cost_of_goods_sold END ASC,
+	CASE WHEN @order_by::text= 'return' AND @order_type::text = 'ascending' THEN T.return END ASC
 OFFSET @from_offset::int LIMIT @to_limit::int;
 
 -- name: CountTransactions :one
