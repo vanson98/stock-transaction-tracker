@@ -22,6 +22,40 @@ func InitTransactionController(transService sv_interface.ITransactionService) tr
 	}
 }
 
+func (tc transactionController) GetPaging(c *gin.Context) {
+	var requestModel transaction_model.GetTransactionsPagingModel
+	err := c.ShouldBindQuery(&requestModel)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	transactions, err := tc.transactionService.GetPaging(c, db.GetTransactionsPagingParams{
+		AccountID:  requestModel.AccountId,
+		ToLimit:    requestModel.PageSize,
+		Ticker:     requestModel.Ticker,
+		FromOffset: (requestModel.Page - 1) * requestModel.PageSize,
+		OrderBy:    requestModel.OrderBy,
+		OrderType:  requestModel.OrderType,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+	totalRow, err := tc.transactionService.CountTransaction(c, db.CountTransactionsParams{
+		AccountID: requestModel.AccountId,
+		Ticker:    requestModel.Ticker,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+	result := transaction_model.GetTransactionsPagingResponseModel{
+		Transactions: transactions,
+		Total:        int32(totalRow),
+	}
+	c.JSON(http.StatusOK, result)
+}
+
 func (tc transactionController) CreateNewTransaction(c *gin.Context) {
 	var requestModel transaction_model.CreateTransactionModel
 	err := c.ShouldBindBodyWithJSON(&requestModel)
@@ -29,7 +63,7 @@ func (tc transactionController) CreateNewTransaction(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
-	tradingDate, err := time.Parse("2006-01-02 15:04:05", requestModel.TradingDate)
+	tradingDate, err := time.Parse("2006-01-02T15:04:05Z", requestModel.TradingDate)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, errorResponse(err))
 		return
@@ -37,14 +71,13 @@ func (tc transactionController) CreateNewTransaction(c *gin.Context) {
 	result, err := tc.transactionService.AddTransaction(c, dtos.CreateTransactionDto{
 		AccountId:    requestModel.AccountId,
 		InvestmentId: requestModel.InvestmentID,
-		Ticker:       requestModel.Ticker,
 		TradingDate: pgtype.Timestamp{
 			Time:  tradingDate,
 			Valid: true,
 		},
 		Trade:       db.TradeType(requestModel.Trade),
-		Volume:      requestModel.Volume,
-		OrderPrice:  requestModel.OrderPrice,
+		Volume:      requestModel.MatchVolume,
+		OrderPrice:  requestModel.MatchPrice,
 		MatchVolume: requestModel.MatchVolume,
 		MatchPrice:  requestModel.MatchPrice,
 		Fee:         requestModel.Fee,

@@ -1,0 +1,1 @@
+ALTER TABLE investments ADD CONSTRAINT "accountid_ticker_unique" UNIQUE (account_id,ticker);

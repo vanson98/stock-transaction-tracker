@@ -23,8 +23,13 @@ func InitTransactionService(store db.IStore) sv_interface.ITransactionService {
 }
 
 // GetPaging implements sv_interface.ITransactionService.
-func (t *transactionService) GetPaging(ctx context.Context, ticker string) ([]db.Transaction, error) {
-	return t.store.GetTransactionsPaging(ctx,ticker)
+func (t *transactionService) GetPaging(ctx context.Context, param db.GetTransactionsPagingParams) ([]db.GetTransactionsPagingRow, error) {
+	return t.store.GetTransactionsPaging(ctx, param)
+}
+
+// CountTransaction implements sv_interface.ITransactionService.
+func (t *transactionService) CountTransaction(ctx context.Context, param db.CountTransactionsParams) (int64, error) {
+	return t.store.CountTransactions(ctx, param)
 }
 
 // GetById implements sv_interface.ITransactionService.
@@ -36,9 +41,10 @@ func (t *transactionService) GetById(ctx context.Context, id int64) (db.Transact
 func (t *transactionService) AddTransaction(ctx context.Context, arg dtos.CreateTransactionDto) (db.Transaction, error) {
 	if arg.Trade == db.TradeTypeBUY {
 		return t.insertBuyingTransaction(ctx, arg)
-	} else {
+	} else if arg.Trade == db.TradeTypeSELL {
 		return t.insertSellingTransaction(ctx, arg)
 	}
+	return db.Transaction{}, fmt.Errorf("trading type is not valid")
 }
 
 func (t *transactionService) insertBuyingTransaction(ctx context.Context, arg dtos.CreateTransactionDto) (db.Transaction, error) {
@@ -86,7 +92,7 @@ func (t *transactionService) insertBuyingTransaction(ctx context.Context, arg dt
 		// create transaction
 		transaction, err := t.store.CreateTransaction(ctx, db.CreateTransactionParams{
 			InvestmentID:    arg.InvestmentId,
-			Ticker:          arg.Ticker,
+			Ticker:          investment.Ticker,
 			TradingDate:     arg.TradingDate,
 			Trade:           arg.Trade,
 			Volume:          arg.Volume,
@@ -120,6 +126,7 @@ func (t *transactionService) insertBuyingTransaction(ctx context.Context, arg dt
 			CurrentVolume: investment.CurrentVolume,
 			Fee:           investment.Fee,
 			Tax:           investment.Tax,
+			Status:        db.InvestmentStatusActive,
 			UpdatedDate: pgtype.Timestamp{
 				Time:  time.Now(),
 				Valid: true,
@@ -142,5 +149,83 @@ func (t *transactionService) insertBuyingTransaction(ctx context.Context, arg dt
 }
 
 func (t *transactionService) insertSellingTransaction(ctx context.Context, arg dtos.CreateTransactionDto) (db.Transaction, error) {
-	panic("not implemented")
+	result, err := t.store.ExecTx(ctx, func(query *db.Queries) (interface{}, error) {
+		// get investment
+		investment, err := query.GetInvestmentById(ctx, arg.InvestmentId)
+		if err != nil {
+			return db.Transaction{}, err
+		}
+		if investment.CurrentVolume < arg.MatchVolume {
+			err = fmt.Errorf("current volume is less than match volume")
+			return db.Transaction{}, err
+		}
+
+		// create a transaction
+		transaction, err := t.store.CreateTransaction(ctx, db.CreateTransactionParams{
+			InvestmentID:    arg.InvestmentId,
+			Ticker:          investment.Ticker,
+			TradingDate:     arg.TradingDate,
+			Trade:           arg.Trade,
+			Volume:          arg.Volume,
+			OrderPrice:      arg.OrderPrice,
+			MatchVolume:     arg.MatchVolume,
+			MatchPrice:      arg.MatchPrice,
+			MatchValue:      arg.MatchPrice * arg.MatchVolume,
+			Fee:             arg.Fee,
+			Tax:             arg.Tax,
+			Cost:            investment.CapitalCost,
+			CostOfGoodsSold: investment.CapitalCost * arg.MatchVolume,
+			Return:          (arg.MatchPrice-investment.CapitalCost)*arg.MatchVolume - arg.Fee - arg.Tax,
+			Status:          arg.Status,
+		})
+		if err != nil {
+			return db.Transaction{}, err
+		}
+
+		// create account's entry
+		entry, err := query.CreateEntry(ctx, db.CreateEntryParams{
+			AccountID: arg.AccountId,
+			Amount:    transaction.MatchValue - transaction.Fee - transaction.Tax,
+			Type:      db.EntryTypeIT,
+		})
+		if err != nil {
+			return db.Transaction{}, err
+		}
+
+		// update account's balance
+		query.AddAccountBalance(ctx, db.AddAccountBalanceParams{
+			Amount: entry.Amount,
+			ID:     arg.AccountId,
+		})
+		if investment.CurrentVolume-transaction.MatchVolume == 0 {
+			investment.Status = db.InvestmentStatusBuyout
+		}
+		// update investment
+		err = query.UpdateInvestmentWhenSeling(ctx, db.UpdateInvestmentWhenSelingParams{
+			ID:                    transaction.InvestmentID,
+			SellTransactionVolume: transaction.MatchVolume,
+			SellTransactionValue:  transaction.MatchValue,
+			TransactionFee:        transaction.Fee,
+			TransactionTax:        transaction.Tax,
+			UpdatedDate: pgtype.Timestamp{
+				Time:  time.Now(),
+				Valid: true,
+			},
+			Status: investment.Status,
+		})
+		if err != nil {
+			return db.Transaction{}, err
+		}
+
+		return transaction, nil
+	})
+	if err != nil {
+		return db.Transaction{}, err
+	}
+	transaction, ok := result.(db.Transaction)
+	if !ok {
+		err = fmt.Errorf("can not convert db tx result to transaction type")
+		return db.Transaction{}, err
+	}
+	return transaction, err
 }

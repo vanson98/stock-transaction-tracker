@@ -1,8 +1,8 @@
 package controller
 
 import (
-	"fmt"
 	"net/http"
+	"strconv"
 	investment_model "stt/api/models/investment"
 	db "stt/database/postgres/sqlc"
 	sv_interface "stt/services/interfaces"
@@ -66,15 +66,15 @@ func (ic *InvestmentController) Create(c *gin.Context) {
 	}
 
 	// check investment exist
-	ivm, err := ic.investmentService.GetByTicker(c, createInvestmentModel.Ticker)
-	if err != nil && err != pgx.ErrNoRows {
-		c.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	} else if ivm.ID > 0 && err == nil {
-		err := fmt.Errorf("investment already exist")
-		c.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
+	// ivm, err := ic.investmentService.GetByTicker(c, createInvestmentModel.Ticker)
+	// if err != nil && err != pgx.ErrNoRows {
+	// 	c.JSON(http.StatusInternalServerError, errorResponse(err))
+	// 	return
+	// } else if ivm.ID > 0 && err == nil {
+	// 	err := fmt.Errorf("investment already exist")
+	// 	c.JSON(http.StatusBadRequest, errorResponse(err))
+	// 	return
+	// }
 
 	investment, err := ic.investmentService.Create(c, db.CreateInvestmentParams{
 		AccountID:   createInvestmentModel.AccountID,
@@ -90,5 +90,24 @@ func (ic *InvestmentController) Create(c *gin.Context) {
 		return
 	}
 
+	c.JSON(http.StatusOK, investment)
+}
+
+func (ic *InvestmentController) GetById(c *gin.Context) {
+	idParam, ok := c.Params.Get("id")
+	if !ok {
+		c.JSON(http.StatusBadRequest, "id is required")
+		return
+	}
+	investmentId, err := strconv.Atoi(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	investment, err := ic.investmentService.GetById(c, int64(investmentId))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
 	c.JSON(http.StatusOK, investment)
 }

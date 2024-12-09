@@ -178,6 +178,21 @@ func (m *MockIInvestmentService) EXPECT() *MockIInvestmentServiceMockRecorder {
 	return m.recorder
 }
 
+// Count mocks base method.
+func (m *MockIInvestmentService) Count(arg0 context.Context, arg1 db.CountInvestmentParams) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Count", arg0, arg1)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Count indicates an expected call of Count.
+func (mr *MockIInvestmentServiceMockRecorder) Count(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Count", reflect.TypeOf((*MockIInvestmentService)(nil).Count), arg0, arg1)
+}
+
 // Create mocks base method.
 func (m *MockIInvestmentService) Create(arg0 context.Context, arg1 db.CreateInvestmentParams) (db.Investment, error) {
 	m.ctrl.T.Helper()
@@ -223,19 +238,19 @@ func (mr *MockIInvestmentServiceMockRecorder) GetByTicker(arg0, arg1 interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByTicker", reflect.TypeOf((*MockIInvestmentService)(nil).GetByTicker), arg0, arg1)
 }
 
-// SearchInvestmentPaging mocks base method.
-func (m *MockIInvestmentService) SearchInvestmentPaging(arg0 context.Context, arg1 db.SearchInvestmentPagingParams) ([]db.Investment, error) {
+// SearchPaging mocks base method.
+func (m *MockIInvestmentService) SearchPaging(arg0 context.Context, arg1 db.SearchInvestmentPagingParams) ([]db.Investment, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SearchInvestmentPaging", arg0, arg1)
+	ret := m.ctrl.Call(m, "SearchPaging", arg0, arg1)
 	ret0, _ := ret[0].([]db.Investment)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// SearchInvestmentPaging indicates an expected call of SearchInvestmentPaging.
-func (mr *MockIInvestmentServiceMockRecorder) SearchInvestmentPaging(arg0, arg1 interface{}) *gomock.Call {
+// SearchPaging indicates an expected call of SearchPaging.
+func (mr *MockIInvestmentServiceMockRecorder) SearchPaging(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchInvestmentPaging", reflect.TypeOf((*MockIInvestmentService)(nil).SearchInvestmentPaging), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchPaging", reflect.TypeOf((*MockIInvestmentService)(nil).SearchPaging), arg0, arg1)
 }
 
 // MockIUserService is a mock of IUserService interface.

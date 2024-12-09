@@ -42,8 +42,20 @@ capital_cost = $4,
 current_volume = $5,
 fee = $6,
 tax = $7,
-updated_date = $8
+updated_date = $8, 
+status=$9
 where id = $1;
+
+-- name: UpdateInvestmentWhenSeling :exec
+UPDATE investments
+SET sell_volume = sell_volume + @sell_transaction_volume,
+sell_value = sell_value + @sell_transaction_value,
+current_volume = current_volume - @sell_transaction_volume,
+fee = fee + @transaction_fee,
+tax = tax + @transaction_tax, 
+status= @status,
+updated_date = sqlc.arg(updated_date)
+WHERE id = $1;
 
 
 

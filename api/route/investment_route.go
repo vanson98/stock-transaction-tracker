@@ -11,5 +11,6 @@ func InitInvestmentRouter(group *gin.RouterGroup, investmentService sv_interface
 	ic := controller.InitInvestmentController(investmentService)
 
 	group.GET("/investments", ic.Search)
+	group.GET("/investment/:id", ic.GetById)
 	group.POST("/investment", ic.Create)
 }

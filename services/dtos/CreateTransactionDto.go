@@ -9,7 +9,6 @@ import (
 type CreateTransactionDto struct {
 	AccountId    int64
 	InvestmentId int64
-	Ticker       string
 	TradingDate  pgtype.Timestamp
 	Trade        db.TradeType
 	Volume       int64
