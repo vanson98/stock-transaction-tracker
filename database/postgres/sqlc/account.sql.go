@@ -162,32 +162,45 @@ func (q *Queries) GetAccountInfoById(ctx context.Context, id int64) (GetAccountI
 	return i, err
 }
 
-const getAccountsPaging = `-- name: GetAccountsPaging :many
-SELECT id, channel_name, owner, balance, currency, created_at FROM accounts
-OFFSET $1 LIMIT $2
+const getAccountPaging = `-- name: GetAccountPaging :many
+SELECT a.id, a.channel_name, a.balance, a.currency, 
+SUM(
+	CASE WHEN e.amount < 0 THEN e.amount ELSE 0 END
+) AS withdraw, 
+SUM (
+	CASE WHEN e.amount > 0 THEN e.amount ELSE 0 END
+) as deposit
+FROM accounts AS a
+LEFT JOIN entries AS e ON a.id = e.account_id
+WHERE "owner" = $1
+GROUP BY a.id, a.channel_name, a.balance, a.currency
 `
 
-type GetAccountsPagingParams struct {
-	Offset int32 `json:"offset"`
-	Limit  int32 `json:"limit"`
+type GetAccountPagingRow struct {
+	ID          int64  `json:"id"`
+	ChannelName string `json:"channel_name"`
+	Balance     int64  `json:"balance"`
+	Currency    string `json:"currency"`
+	Withdraw    int64  `json:"withdraw"`
+	Deposit     int64  `json:"deposit"`
 }
 
-func (q *Queries) GetAccountsPaging(ctx context.Context, arg GetAccountsPagingParams) ([]Account, error) {
-	rows, err := q.db.Query(ctx, getAccountsPaging, arg.Offset, arg.Limit)
+func (q *Queries) GetAccountPaging(ctx context.Context, owner string) ([]GetAccountPagingRow, error) {
+	rows, err := q.db.Query(ctx, getAccountPaging, owner)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Account
+	var items []GetAccountPagingRow
 	for rows.Next() {
-		var i Account
+		var i GetAccountPagingRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.ChannelName,
-			&i.Owner,
 			&i.Balance,
 			&i.Currency,
-			&i.CreatedAt,
+			&i.Withdraw,
+			&i.Deposit,
 		); err != nil {
 			return nil, err
 		}

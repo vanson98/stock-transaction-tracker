@@ -10,6 +10,7 @@ import (
 	sv_interface "stt/services/interfaces"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
@@ -81,6 +82,26 @@ func (ac *AccountController) GetListAccount(ctx *gin.Context) {
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
+	}
+	ctx.JSON(http.StatusOK, accounts)
+}
+
+func (ac *AccountController) GetAccoutPaging(ctx *gin.Context) {
+	requestDataModel := account_model.SearchAccountRequest{}
+	err := ctx.ShouldBindQuery(&requestDataModel)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	accounts, err := ac.AccountService.GetAllByOwner(ctx, requestDataModel.Onwer)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		} else {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
 	}
 	ctx.JSON(http.StatusOK, accounts)
 }

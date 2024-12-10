@@ -3,9 +3,6 @@ INSERT INTO accounts(channel_name,"owner",balance,currency)
 VALUES($1,$2,$3,$4)
 RETURNING *;
 
--- name: GetAccountsPaging :many
-SELECT * FROM accounts
-OFFSET $1 LIMIT $2;
 
 -- name: GetAccountForUpdate :one
 SELECT * FROM accounts
@@ -48,3 +45,18 @@ WHERE id=$1;
 
 -- name: ListAllAccount :many
 select a.id, a.channel_name from accounts as a;
+
+
+-- name: GetAccountPaging :many
+SELECT a.id, a.channel_name, a.balance, a.currency, 
+SUM(
+	CASE WHEN e.amount < 0 THEN e.amount ELSE 0 END
+) AS withdraw, 
+SUM (
+	CASE WHEN e.amount > 0 THEN e.amount ELSE 0 END
+) as deposit
+FROM accounts AS a
+LEFT JOIN entries AS e ON a.id = e.account_id
+WHERE "owner" = sqlc.arg(owner)
+GROUP BY a.id, a.channel_name, a.balance, a.currency;
+

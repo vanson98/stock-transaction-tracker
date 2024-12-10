@@ -43,8 +43,8 @@ func (as accountService) GetById(ctx context.Context, id int64) (db.Account, err
 }
 
 // GetAllPaging implements sv_interface.IAccountService.
-func (as accountService) GetAllPaging(ctx context.Context, param db.GetAccountsPagingParams) ([]db.Account, error) {
-	return as.store.GetAccountsPaging(ctx, param)
+func (as accountService) GetAllByOwner(ctx context.Context, owner string) ([]db.GetAccountPagingRow, error) {
+	return as.store.GetAccountPaging(ctx, owner)
 }
 
 // UpdateBalance implements sv_interface.IAccountService.
