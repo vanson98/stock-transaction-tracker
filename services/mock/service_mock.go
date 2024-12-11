@@ -80,19 +80,19 @@ func (mr *MockIAccountServiceMockRecorder) GetAccountInfoById(arg0, arg1 interfa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccountInfoById", reflect.TypeOf((*MockIAccountService)(nil).GetAccountInfoById), arg0, arg1)
 }
 
-// GetAllSearching mocks base method.
-func (m *MockIAccountService) GetAllSearching(arg0 context.Context, arg1 db.SearchAccountParams) ([]db.Account, error) {
+// GetAllByOwner mocks base method.
+func (m *MockIAccountService) GetAllByOwner(arg0 context.Context, arg1 string) ([]db.GetAccountPagingRow, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllSearching", arg0, arg1)
-	ret0, _ := ret[0].([]db.Account)
+	ret := m.ctrl.Call(m, "GetAllByOwner", arg0, arg1)
+	ret0, _ := ret[0].([]db.GetAccountPagingRow)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetAllSearching indicates an expected call of GetAllSearching.
-func (mr *MockIAccountServiceMockRecorder) GetAllSearching(arg0, arg1 interface{}) *gomock.Call {
+// GetAllByOwner indicates an expected call of GetAllByOwner.
+func (mr *MockIAccountServiceMockRecorder) GetAllByOwner(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllSearching", reflect.TypeOf((*MockIAccountService)(nil).GetAllSearching), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllByOwner", reflect.TypeOf((*MockIAccountService)(nil).GetAllByOwner), arg0, arg1)
 }
 
 // GetById mocks base method.

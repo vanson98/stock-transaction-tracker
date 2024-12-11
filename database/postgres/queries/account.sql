@@ -13,25 +13,19 @@ FOR NO KEY UPDATE;
 SELECT * FROM accounts
 WHERE id=$1 LIMIT 1;
 
--- name: GetAccountInfoById :one 
-select a.id, a.channel_name, a.balance,a.currency, a."owner",
+-- name: GetAccountInfoByIds :many 
+SELECT a.id, a.channel_name, a.balance as cash, 
 SUM(
-	case
-	WHEN amount > 0 and e.type='TM' then amount
-	ELSE 0
-	END
-	) as deposit,
+	CASE WHEN i.capital_cost IS NULL THEN 0 ELSE (i.capital_cost * i.current_volume) END
+	)
+AS total_cogs,
 SUM(
-	CASE 
-	WHEN amount < 0 and e.type='TM' THEN amount
-	ELSE 0 
-	END
-) AS withdrawal
-from accounts as a
-left join entries as e on a.id = e.account_id 
-where a.id = $1
-GROUP BY a.id,  a.channel_name, a.balance, a.currency, a."owner"
-LIMIT 1;
+	CASE WHEN i.market_price IS NULL THEN 0 ELSE (i.market_price * i.current_volume) END
+) AS market_value
+FROM accounts as a
+LEFT JOIN investments AS i ON a.id = i.account_id
+WHERE a.id = ANY(@account_ids::bigint[])
+GROUP BY a.id,  a.channel_name, a.balance;
 
 -- name: AddAccountBalance :one
 UPDATE accounts
@@ -44,7 +38,8 @@ DELETE FROM accounts
 WHERE id=$1;
 
 -- name: ListAllAccount :many
-select a.id, a.channel_name from accounts as a;
+select a.id, a.channel_name from accounts as a
+where a.owner = $1;
 
 
 -- name: GetAccountPaging :many

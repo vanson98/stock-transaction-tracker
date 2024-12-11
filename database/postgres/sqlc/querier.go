@@ -20,7 +20,7 @@ type Querier interface {
 	DeleteAccount(ctx context.Context, id int64) error
 	GetAccountById(ctx context.Context, id int64) (Account, error)
 	GetAccountForUpdate(ctx context.Context, id int64) (Account, error)
-	GetAccountInfoById(ctx context.Context, id int64) (GetAccountInfoByIdRow, error)
+	GetAccountInfoByIds(ctx context.Context, accountIds []int64) ([]GetAccountInfoByIdsRow, error)
 	GetAccountPaging(ctx context.Context, owner string) ([]GetAccountPagingRow, error)
 	GetEntryById(ctx context.Context, id int64) (Entry, error)
 	GetInvestmentById(ctx context.Context, id int64) (Investment, error)
@@ -29,7 +29,7 @@ type Querier interface {
 	GetTransactionById(ctx context.Context, id int64) (Transaction, error)
 	GetTransactionsPaging(ctx context.Context, arg GetTransactionsPagingParams) ([]GetTransactionsPagingRow, error)
 	GetUser(ctx context.Context, username string) (User, error)
-	ListAllAccount(ctx context.Context) ([]ListAllAccountRow, error)
+	ListAllAccount(ctx context.Context, owner string) ([]ListAllAccountRow, error)
 	SearchInvestmentPaging(ctx context.Context, arg SearchInvestmentPagingParams) ([]Investment, error)
 	UpdateInvestmentStatus(ctx context.Context, arg UpdateInvestmentStatusParams) error
 	UpdateInvestmentWhenBuying(ctx context.Context, arg UpdateInvestmentWhenBuyingParams) error

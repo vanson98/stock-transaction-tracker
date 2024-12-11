@@ -116,50 +116,53 @@ func (q *Queries) GetAccountForUpdate(ctx context.Context, id int64) (Account, e
 	return i, err
 }
 
-const getAccountInfoById = `-- name: GetAccountInfoById :one
-select a.id, a.channel_name, a.balance,a.currency, a."owner",
+const getAccountInfoByIds = `-- name: GetAccountInfoByIds :many
+SELECT a.id, a.channel_name, a.balance as cash, 
 SUM(
-	case
-	WHEN amount > 0 and e.type='TM' then amount
-	ELSE 0
-	END
-	) as deposit,
+	CASE WHEN i.capital_cost IS NULL THEN 0 ELSE (i.capital_cost * i.current_volume) END
+	)
+AS total_cogs,
 SUM(
-	CASE 
-	WHEN amount < 0 and e.type='TM' THEN amount
-	ELSE 0 
-	END
-) AS withdrawal
-from accounts as a
-left join entries as e on a.id = e.account_id 
-where a.id = $1
-GROUP BY a.id,  a.channel_name, a.balance, a.currency, a."owner"
-LIMIT 1
+	CASE WHEN i.market_price IS NULL THEN 0 ELSE (i.market_price * i.current_volume) END
+) AS market_value
+FROM accounts as a
+LEFT JOIN investments AS i ON a.id = i.account_id
+WHERE a.id = ANY($1::bigint[])
+GROUP BY a.id,  a.channel_name, a.balance
 `
 
-type GetAccountInfoByIdRow struct {
+type GetAccountInfoByIdsRow struct {
 	ID          int64  `json:"id"`
 	ChannelName string `json:"channel_name"`
-	Balance     int64  `json:"balance"`
-	Currency    string `json:"currency"`
-	Owner       string `json:"owner"`
-	Deposit     int64  `json:"deposit"`
-	Withdrawal  int64  `json:"withdrawal"`
+	Cash        int64  `json:"cash"`
+	TotalCogs   int64  `json:"total_cogs"`
+	MarketValue int64  `json:"market_value"`
 }
 
-func (q *Queries) GetAccountInfoById(ctx context.Context, id int64) (GetAccountInfoByIdRow, error) {
-	row := q.db.QueryRow(ctx, getAccountInfoById, id)
-	var i GetAccountInfoByIdRow
-	err := row.Scan(
-		&i.ID,
-		&i.ChannelName,
-		&i.Balance,
-		&i.Currency,
-		&i.Owner,
-		&i.Deposit,
-		&i.Withdrawal,
-	)
-	return i, err
+func (q *Queries) GetAccountInfoByIds(ctx context.Context, accountIds []int64) ([]GetAccountInfoByIdsRow, error) {
+	rows, err := q.db.Query(ctx, getAccountInfoByIds, accountIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAccountInfoByIdsRow
+	for rows.Next() {
+		var i GetAccountInfoByIdsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ChannelName,
+			&i.Cash,
+			&i.TotalCogs,
+			&i.MarketValue,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getAccountPaging = `-- name: GetAccountPaging :many
@@ -214,6 +217,7 @@ func (q *Queries) GetAccountPaging(ctx context.Context, owner string) ([]GetAcco
 
 const listAllAccount = `-- name: ListAllAccount :many
 select a.id, a.channel_name from accounts as a
+where a.owner = $1
 `
 
 type ListAllAccountRow struct {
@@ -221,8 +225,8 @@ type ListAllAccountRow struct {
 	ChannelName string `json:"channel_name"`
 }
 
-func (q *Queries) ListAllAccount(ctx context.Context) ([]ListAllAccountRow, error) {
-	rows, err := q.db.Query(ctx, listAllAccount)
+func (q *Queries) ListAllAccount(ctx context.Context, owner string) ([]ListAllAccountRow, error) {
+	rows, err := q.db.Query(ctx, listAllAccount, owner)
 	if err != nil {
 		return nil, err
 	}
