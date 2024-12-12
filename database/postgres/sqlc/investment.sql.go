@@ -13,16 +13,16 @@ import (
 
 const countInvestment = `-- name: CountInvestment :one
 SELECT COUNT(*) from investments
-WHERE account_id=$1 AND (ticker ILIKE $2::text OR company_name ILIKE $2::text)
+WHERE account_id=ANY($1::bigint[]) AND (ticker ILIKE $2::text OR company_name ILIKE $2::text)
 `
 
 type CountInvestmentParams struct {
-	AccountID  int64  `json:"account_id"`
-	SearchText string `json:"search_text"`
+	AccountIds []int64 `json:"account_ids"`
+	SearchText string  `json:"search_text"`
 }
 
 func (q *Queries) CountInvestment(ctx context.Context, arg CountInvestmentParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countInvestment, arg.AccountID, arg.SearchText)
+	row := q.db.QueryRow(ctx, countInvestment, arg.AccountIds, arg.SearchText)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -191,28 +191,47 @@ func (q *Queries) GetInvestmentsByAccountId(ctx context.Context, accountID int64
 }
 
 const searchInvestmentPaging = `-- name: SearchInvestmentPaging :many
-SELECT id, account_id, ticker, company_name, buy_volume, buy_value, capital_cost, market_price, sell_volume, sell_value, current_volume, description, status, fee, tax, updated_date from investments
-WHERE account_id=$1 AND (ticker ILIKE $2::text OR company_name ILIKE $2::text)
+SELECT a.channel_name, i.id, i.ticker, i.buy_value, i.buy_volume, i.capital_cost, i.current_volume, i.market_price, i.sell_value, i.sell_volume, i.fee, i.tax, i.status from investments AS i
+JOIN accounts AS a ON i.account_id = a.id
+WHERE account_id = ANY($1::bigint[]) AND (ticker ILIKE $2::text OR company_name ILIKE $2::text)
 ORDER BY 
     CASE WHEN $3::text = 'ticker' AND $4::text = 'ascending' THEN ticker END ASC,
     CASE WHEN $3::text = 'ticker' AND $4::text = 'descending' THEN ticker END DESC,
     CASE WHEN $3::text = 'status' AND $4::text = 'ascending' THEN "status" END ASC,
-    CASE WHEN $3::text = 'status' AND $4::text = 'descending' THEN "status" END DESC
+    CASE WHEN $3::text = 'status' AND $4::text = 'descending' THEN "status" END DESC,
+    CASE WHEN $3::text = 'channel_name' AND $4::text = 'descending' THEN "channel_name" END DESC,
+    CASE WHEN $3::text = 'channel_name' AND $4::text = 'ascending' THEN "channel_name" END ASC
 OFFSET $5::int LIMIT $6::int
 `
 
 type SearchInvestmentPagingParams struct {
-	AccountID  int64  `json:"account_id"`
-	SearchText string `json:"search_text"`
-	OrderBy    string `json:"order_by"`
-	SortType   string `json:"sort_type"`
-	FromOffset int32  `json:"from_offset"`
-	TakeLimit  int32  `json:"take_limit"`
+	AccountIds []int64 `json:"account_ids"`
+	SearchText string  `json:"search_text"`
+	OrderBy    string  `json:"order_by"`
+	SortType   string  `json:"sort_type"`
+	FromOffset int32   `json:"from_offset"`
+	TakeLimit  int32   `json:"take_limit"`
 }
 
-func (q *Queries) SearchInvestmentPaging(ctx context.Context, arg SearchInvestmentPagingParams) ([]Investment, error) {
+type SearchInvestmentPagingRow struct {
+	ChannelName   string           `json:"channel_name"`
+	ID            int64            `json:"id"`
+	Ticker        string           `json:"ticker"`
+	BuyValue      int64            `json:"buy_value"`
+	BuyVolume     int64            `json:"buy_volume"`
+	CapitalCost   int64            `json:"capital_cost"`
+	CurrentVolume int64            `json:"current_volume"`
+	MarketPrice   int64            `json:"market_price"`
+	SellValue     int64            `json:"sell_value"`
+	SellVolume    int64            `json:"sell_volume"`
+	Fee           int64            `json:"fee"`
+	Tax           int64            `json:"tax"`
+	Status        InvestmentStatus `json:"status"`
+}
+
+func (q *Queries) SearchInvestmentPaging(ctx context.Context, arg SearchInvestmentPagingParams) ([]SearchInvestmentPagingRow, error) {
 	rows, err := q.db.Query(ctx, searchInvestmentPaging,
-		arg.AccountID,
+		arg.AccountIds,
 		arg.SearchText,
 		arg.OrderBy,
 		arg.SortType,
@@ -223,26 +242,23 @@ func (q *Queries) SearchInvestmentPaging(ctx context.Context, arg SearchInvestme
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Investment
+	var items []SearchInvestmentPagingRow
 	for rows.Next() {
-		var i Investment
+		var i SearchInvestmentPagingRow
 		if err := rows.Scan(
+			&i.ChannelName,
 			&i.ID,
-			&i.AccountID,
 			&i.Ticker,
-			&i.CompanyName,
-			&i.BuyVolume,
 			&i.BuyValue,
+			&i.BuyVolume,
 			&i.CapitalCost,
-			&i.MarketPrice,
-			&i.SellVolume,
-			&i.SellValue,
 			&i.CurrentVolume,
-			&i.Description,
-			&i.Status,
+			&i.MarketPrice,
+			&i.SellValue,
+			&i.SellVolume,
 			&i.Fee,
 			&i.Tax,
-			&i.UpdatedDate,
+			&i.Status,
 		); err != nil {
 			return nil, err
 		}

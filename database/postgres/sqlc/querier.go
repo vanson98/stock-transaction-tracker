@@ -30,7 +30,7 @@ type Querier interface {
 	GetTransactionsPaging(ctx context.Context, arg GetTransactionsPagingParams) ([]GetTransactionsPagingRow, error)
 	GetUser(ctx context.Context, username string) (User, error)
 	ListAllAccount(ctx context.Context, owner string) ([]ListAllAccountRow, error)
-	SearchInvestmentPaging(ctx context.Context, arg SearchInvestmentPagingParams) ([]Investment, error)
+	SearchInvestmentPaging(ctx context.Context, arg SearchInvestmentPagingParams) ([]SearchInvestmentPagingRow, error)
 	UpdateInvestmentStatus(ctx context.Context, arg UpdateInvestmentStatusParams) error
 	UpdateInvestmentWhenBuying(ctx context.Context, arg UpdateInvestmentWhenBuyingParams) error
 	UpdateInvestmentWhenSeling(ctx context.Context, arg UpdateInvestmentWhenSelingParams) error

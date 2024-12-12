@@ -4,18 +4,21 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 RETURNING *;
 
 -- name: SearchInvestmentPaging :many
-SELECT * from investments
-WHERE account_id=sqlc.arg(account_id) AND (ticker ILIKE @search_text::text OR company_name ILIKE @search_text::text)
+SELECT a.channel_name, i.id, i.ticker, i.buy_value, i.buy_volume, i.capital_cost, i.current_volume, i.market_price, i.sell_value, i.sell_volume, i.fee, i.tax, i.status from investments AS i
+JOIN accounts AS a ON i.account_id = a.id
+WHERE account_id = ANY(@account_ids::bigint[]) AND (ticker ILIKE @search_text::text OR company_name ILIKE @search_text::text)
 ORDER BY 
     CASE WHEN @order_by::text = 'ticker' AND @sort_type::text = 'ascending' THEN ticker END ASC,
     CASE WHEN @order_by::text = 'ticker' AND @sort_type::text = 'descending' THEN ticker END DESC,
     CASE WHEN @order_by::text = 'status' AND @sort_type::text = 'ascending' THEN "status" END ASC,
-    CASE WHEN @order_by::text = 'status' AND @sort_type::text = 'descending' THEN "status" END DESC
+    CASE WHEN @order_by::text = 'status' AND @sort_type::text = 'descending' THEN "status" END DESC,
+    CASE WHEN @order_by::text = 'channel_name' AND @sort_type::text = 'descending' THEN "channel_name" END DESC,
+    CASE WHEN @order_by::text = 'channel_name' AND @sort_type::text = 'ascending' THEN "channel_name" END ASC
 OFFSET @from_offset::int LIMIT @take_limit::int;
 
 -- name: CountInvestment :one
 SELECT COUNT(*) from investments
-WHERE account_id=sqlc.arg(account_id) AND (ticker ILIKE @search_text::text OR company_name ILIKE @search_text::text);
+WHERE account_id=ANY(@account_ids::bigint[]) AND (ticker ILIKE @search_text::text OR company_name ILIKE @search_text::text);
 
 -- name: GetInvestmentByTicker :one
 SELECT * from investments

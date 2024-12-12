@@ -65,19 +65,19 @@ func (mr *MockIAccountServiceMockRecorder) Delete(arg0, arg1 interface{}) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockIAccountService)(nil).Delete), arg0, arg1)
 }
 
-// GetAccountInfoById mocks base method.
-func (m *MockIAccountService) GetAccountInfoById(arg0 context.Context, arg1 int64) (db.GetAccountInfoByIdRow, error) {
+// GetAccountInfoByIds mocks base method.
+func (m *MockIAccountService) GetAccountInfoByIds(arg0 context.Context, arg1 []int64) ([]db.GetAccountInfoByIdsRow, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAccountInfoById", arg0, arg1)
-	ret0, _ := ret[0].(db.GetAccountInfoByIdRow)
+	ret := m.ctrl.Call(m, "GetAccountInfoByIds", arg0, arg1)
+	ret0, _ := ret[0].([]db.GetAccountInfoByIdsRow)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetAccountInfoById indicates an expected call of GetAccountInfoById.
-func (mr *MockIAccountServiceMockRecorder) GetAccountInfoById(arg0, arg1 interface{}) *gomock.Call {
+// GetAccountInfoByIds indicates an expected call of GetAccountInfoByIds.
+func (mr *MockIAccountServiceMockRecorder) GetAccountInfoByIds(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccountInfoById", reflect.TypeOf((*MockIAccountService)(nil).GetAccountInfoById), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccountInfoByIds", reflect.TypeOf((*MockIAccountService)(nil).GetAccountInfoByIds), arg0, arg1)
 }
 
 // GetAllByOwner mocks base method.
@@ -110,19 +110,19 @@ func (mr *MockIAccountServiceMockRecorder) GetById(arg0, arg1 interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetById", reflect.TypeOf((*MockIAccountService)(nil).GetById), arg0, arg1)
 }
 
-// ListAllAccount mocks base method.
-func (m *MockIAccountService) ListAllAccount(arg0 context.Context) ([]db.ListAllAccountRow, error) {
+// ListAllByOwner mocks base method.
+func (m *MockIAccountService) ListAllByOwner(arg0 context.Context, arg1 string) ([]db.ListAllAccountRow, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListAllAccount", arg0)
+	ret := m.ctrl.Call(m, "ListAllByOwner", arg0, arg1)
 	ret0, _ := ret[0].([]db.ListAllAccountRow)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ListAllAccount indicates an expected call of ListAllAccount.
-func (mr *MockIAccountServiceMockRecorder) ListAllAccount(arg0 interface{}) *gomock.Call {
+// ListAllByOwner indicates an expected call of ListAllByOwner.
+func (mr *MockIAccountServiceMockRecorder) ListAllByOwner(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAllAccount", reflect.TypeOf((*MockIAccountService)(nil).ListAllAccount), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAllByOwner", reflect.TypeOf((*MockIAccountService)(nil).ListAllByOwner), arg0, arg1)
 }
 
 // TransferMoney mocks base method.
@@ -239,10 +239,10 @@ func (mr *MockIInvestmentServiceMockRecorder) GetByTicker(arg0, arg1 interface{}
 }
 
 // SearchPaging mocks base method.
-func (m *MockIInvestmentService) SearchPaging(arg0 context.Context, arg1 db.SearchInvestmentPagingParams) ([]db.Investment, error) {
+func (m *MockIInvestmentService) SearchPaging(arg0 context.Context, arg1 db.SearchInvestmentPagingParams) ([]db.SearchInvestmentPagingRow, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SearchPaging", arg0, arg1)
-	ret0, _ := ret[0].([]db.Investment)
+	ret0, _ := ret[0].([]db.SearchInvestmentPagingRow)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
