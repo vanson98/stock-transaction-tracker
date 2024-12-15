@@ -9,6 +9,7 @@ import (
 	sv_interface "stt/services/interfaces"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -49,8 +50,16 @@ func (t *transactionService) AddTransaction(ctx context.Context, arg dtos.Create
 
 func (t *transactionService) insertBuyingTransaction(ctx context.Context, arg dtos.CreateTransactionDto) (db.Transaction, error) {
 	result, err := t.store.ExecTx(ctx, func(q *db.Queries) (interface{}, error) {
+		// get investment
+		investment, err := t.store.GetInvestmentById(ctx, arg.InvestmentId)
+		if err != nil {
+			if err == pgx.ErrNoRows {
+				return nil, fmt.Errorf("Investment not found")
+			}
+			return nil, err
+		}
 		// check account balance
-		account, err := t.store.GetAccountById(ctx, arg.AccountId)
+		account, err := t.store.GetAccountById(ctx, investment.AccountID)
 		if err != nil {
 			return nil, err
 		}
@@ -61,7 +70,7 @@ func (t *transactionService) insertBuyingTransaction(ctx context.Context, arg dt
 
 		// create entry
 		entry, err := t.store.CreateEntry(ctx, db.CreateEntryParams{
-			AccountID: arg.AccountId,
+			AccountID: investment.AccountID,
 			Amount:    -totalTransactionValue,
 			Type:      db.EntryTypeIT,
 		})
@@ -79,10 +88,7 @@ func (t *transactionService) insertBuyingTransaction(ctx context.Context, arg dt
 		}
 
 		// calculate capital cost for each shares
-		investment, err := t.store.GetInvestmentById(ctx, arg.InvestmentId)
-		if err != nil {
-			return nil, err
-		}
+
 		currentInvestmentValue := investment.CurrentVolume * investment.CapitalCost
 		roundUpCapitalCost := math.Round(
 			(float64(currentInvestmentValue) + float64(totalTransactionValue)) /
@@ -184,7 +190,7 @@ func (t *transactionService) insertSellingTransaction(ctx context.Context, arg d
 
 		// create account's entry
 		entry, err := query.CreateEntry(ctx, db.CreateEntryParams{
-			AccountID: arg.AccountId,
+			AccountID: investment.AccountID,
 			Amount:    transaction.MatchValue - transaction.Fee - transaction.Tax,
 			Type:      db.EntryTypeIT,
 		})
@@ -195,7 +201,7 @@ func (t *transactionService) insertSellingTransaction(ctx context.Context, arg d
 		// update account's balance
 		query.AddAccountBalance(ctx, db.AddAccountBalanceParams{
 			Amount: entry.Amount,
-			ID:     arg.AccountId,
+			ID:     investment.AccountID,
 		})
 		if investment.CurrentVolume-transaction.MatchVolume == 0 {
 			investment.Status = db.InvestmentStatusBuyout

@@ -191,7 +191,7 @@ func (q *Queries) GetInvestmentsByAccountId(ctx context.Context, accountID int64
 }
 
 const searchInvestmentPaging = `-- name: SearchInvestmentPaging :many
-SELECT a.channel_name, i.id, i.ticker, i.buy_value, i.buy_volume, i.capital_cost, i.current_volume, i.market_price, i.sell_value, i.sell_volume, i.fee, i.tax, i.status from investments AS i
+SELECT  i.id, a.id AS account_id ,a.channel_name, i.ticker, i.buy_value, i.buy_volume, i.capital_cost, i.current_volume, i.market_price, i.sell_value, i.sell_volume, i.fee, i.tax, i.status from investments AS i
 JOIN accounts AS a ON i.account_id = a.id
 WHERE account_id = ANY($1::bigint[]) AND (ticker ILIKE $2::text OR company_name ILIKE $2::text)
 ORDER BY 
@@ -214,8 +214,9 @@ type SearchInvestmentPagingParams struct {
 }
 
 type SearchInvestmentPagingRow struct {
-	ChannelName   string           `json:"channel_name"`
 	ID            int64            `json:"id"`
+	AccountID     int64            `json:"account_id"`
+	ChannelName   string           `json:"channel_name"`
 	Ticker        string           `json:"ticker"`
 	BuyValue      int64            `json:"buy_value"`
 	BuyVolume     int64            `json:"buy_volume"`
@@ -246,8 +247,9 @@ func (q *Queries) SearchInvestmentPaging(ctx context.Context, arg SearchInvestme
 	for rows.Next() {
 		var i SearchInvestmentPagingRow
 		if err := rows.Scan(
-			&i.ChannelName,
 			&i.ID,
+			&i.AccountID,
+			&i.ChannelName,
 			&i.Ticker,
 			&i.BuyValue,
 			&i.BuyVolume,

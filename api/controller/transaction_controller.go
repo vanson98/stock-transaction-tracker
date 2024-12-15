@@ -30,7 +30,7 @@ func (tc transactionController) GetPaging(c *gin.Context) {
 		return
 	}
 	transactions, err := tc.transactionService.GetPaging(c, db.GetTransactionsPagingParams{
-		AccountID:  requestModel.AccountId,
+		AccountIds: requestModel.AccountIds,
 		ToLimit:    requestModel.PageSize,
 		Ticker:     requestModel.Ticker,
 		FromOffset: (requestModel.Page - 1) * requestModel.PageSize,
@@ -42,8 +42,8 @@ func (tc transactionController) GetPaging(c *gin.Context) {
 		return
 	}
 	totalRow, err := tc.transactionService.CountTransaction(c, db.CountTransactionsParams{
-		AccountID: requestModel.AccountId,
-		Ticker:    requestModel.Ticker,
+		AccountIds: requestModel.AccountIds,
+		Ticker:     requestModel.Ticker,
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, errorResponse(err))
@@ -69,7 +69,6 @@ func (tc transactionController) CreateNewTransaction(c *gin.Context) {
 		return
 	}
 	result, err := tc.transactionService.AddTransaction(c, dtos.CreateTransactionDto{
-		AccountId:    requestModel.AccountId,
 		InvestmentId: requestModel.InvestmentID,
 		TradingDate: pgtype.Timestamp{
 			Time:  tradingDate,

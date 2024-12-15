@@ -15,18 +15,18 @@ const countTransactions = `-- name: CountTransactions :one
 SELECT COUNT(T.id)
 FROM investments AS I
 INNER JOIN transactions AS T ON I.id = T.investment_id
-WHERE I.account_id = $1 AND
+WHERE I.account_id = ANY($1::bigint[]) AND
  	  T.ticker LIKE 
 	  	CASE WHEN $2::text = '' THEN '%%' ELSE $2::text END
 `
 
 type CountTransactionsParams struct {
-	AccountID int64  `json:"account_id"`
-	Ticker    string `json:"ticker"`
+	AccountIds []int64 `json:"account_ids"`
+	Ticker     string  `json:"ticker"`
 }
 
 func (q *Queries) CountTransactions(ctx context.Context, arg CountTransactionsParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countTransactions, arg.AccountID, arg.Ticker)
+	row := q.db.QueryRow(ctx, countTransactions, arg.AccountIds, arg.Ticker)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -126,10 +126,11 @@ func (q *Queries) GetTransactionById(ctx context.Context, id int64) (Transaction
 }
 
 const getTransactionsPaging = `-- name: GetTransactionsPaging :many
-SELECT T.id, to_char(T.trading_date,'dd/mm/yyyy') as trading_date, T.ticker, T.trade, T.volume, T.order_price, T.match_volume, T.match_price, T.match_value, T.fee, T.tax, T."cost", T.cost_of_goods_sold, T."return", T.status
+SELECT A.channel_name, T.id, to_char(T.trading_date,'dd/mm/yyyy') as trading_date, T.ticker, T.trade, T.volume, T.order_price, T.match_volume, T.match_price, T.match_value, T.fee, T.tax, T."cost", T.cost_of_goods_sold, T."return", T.status
 FROM investments AS I
 INNER JOIN transactions AS T ON I.id = T.investment_id
-WHERE I.account_id = $1 AND
+INNER JOIN accounts AS A ON I.account_id = A.id
+WHERE I.account_id = ANY($1::bigint[]) AND
  	  T.ticker LIKE 
 	  	CASE WHEN $2::text = '' THEN '%%' ELSE $2::text END
 ORDER BY 
@@ -143,15 +144,16 @@ OFFSET $5::int LIMIT $6::int
 `
 
 type GetTransactionsPagingParams struct {
-	AccountID  int64  `json:"account_id"`
-	Ticker     string `json:"ticker"`
-	OrderBy    string `json:"order_by"`
-	OrderType  string `json:"order_type"`
-	FromOffset int32  `json:"from_offset"`
-	ToLimit    int32  `json:"to_limit"`
+	AccountIds []int64 `json:"account_ids"`
+	Ticker     string  `json:"ticker"`
+	OrderBy    string  `json:"order_by"`
+	OrderType  string  `json:"order_type"`
+	FromOffset int32   `json:"from_offset"`
+	ToLimit    int32   `json:"to_limit"`
 }
 
 type GetTransactionsPagingRow struct {
+	ChannelName     string            `json:"channel_name"`
 	ID              int64             `json:"id"`
 	TradingDate     string            `json:"trading_date"`
 	Ticker          string            `json:"ticker"`
@@ -171,7 +173,7 @@ type GetTransactionsPagingRow struct {
 
 func (q *Queries) GetTransactionsPaging(ctx context.Context, arg GetTransactionsPagingParams) ([]GetTransactionsPagingRow, error) {
 	rows, err := q.db.Query(ctx, getTransactionsPaging,
-		arg.AccountID,
+		arg.AccountIds,
 		arg.Ticker,
 		arg.OrderBy,
 		arg.OrderType,
@@ -186,6 +188,7 @@ func (q *Queries) GetTransactionsPaging(ctx context.Context, arg GetTransactions
 	for rows.Next() {
 		var i GetTransactionsPagingRow
 		if err := rows.Scan(
+			&i.ChannelName,
 			&i.ID,
 			&i.TradingDate,
 			&i.Ticker,
