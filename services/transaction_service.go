@@ -38,17 +38,16 @@ func (t *transactionService) GetById(ctx context.Context, id int64) (db.Transact
 	return t.store.GetTransactionById(ctx, id)
 }
 
-// CreateNew implements sv_interface.ITransactionService.
-func (t *transactionService) AddTransaction(ctx context.Context, arg dtos.CreateTransactionDto) (db.Transaction, error) {
+func (t *transactionService) CreateTransaction(ctx context.Context, arg dtos.CreateTransactionDto) (db.Transaction, error) {
 	if arg.Trade == db.TradeTypeBUY {
-		return t.insertBuyingTransaction(ctx, arg)
+		return t.createBuyingTransaction(ctx, arg)
 	} else if arg.Trade == db.TradeTypeSELL {
-		return t.insertSellingTransaction(ctx, arg)
+		return t.createSellingTransaction(ctx, arg)
 	}
 	return db.Transaction{}, fmt.Errorf("trading type is not valid")
 }
 
-func (t *transactionService) insertBuyingTransaction(ctx context.Context, arg dtos.CreateTransactionDto) (db.Transaction, error) {
+func (t *transactionService) createBuyingTransaction(ctx context.Context, arg dtos.CreateTransactionDto) (db.Transaction, error) {
 	result, err := t.store.ExecTx(ctx, func(q *db.Queries) (interface{}, error) {
 		// get investment
 		investment, err := t.store.GetInvestmentById(ctx, arg.InvestmentId)
@@ -154,7 +153,7 @@ func (t *transactionService) insertBuyingTransaction(ctx context.Context, arg dt
 	return transaction, err
 }
 
-func (t *transactionService) insertSellingTransaction(ctx context.Context, arg dtos.CreateTransactionDto) (db.Transaction, error) {
+func (t *transactionService) createSellingTransaction(ctx context.Context, arg dtos.CreateTransactionDto) (db.Transaction, error) {
 	result, err := t.store.ExecTx(ctx, func(query *db.Queries) (interface{}, error) {
 		// get investment
 		investment, err := query.GetInvestmentById(ctx, arg.InvestmentId)

@@ -7,7 +7,7 @@ import (
 )
 
 type ITransactionService interface {
-	AddTransaction(ctx context.Context, arg dtos.CreateTransactionDto) (db.Transaction, error)
+	CreateTransaction(ctx context.Context, arg dtos.CreateTransactionDto) (db.Transaction, error)
 	GetById(ctx context.Context, id int64) (db.Transaction, error)
 	GetPaging(ctx context.Context, param db.GetTransactionsPagingParams) ([]db.GetTransactionsPagingRow, error)
 	CountTransaction(ctx context.Context, param db.CountTransactionsParams) (int64, error)

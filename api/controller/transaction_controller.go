@@ -70,7 +70,7 @@ func (tc transactionController) CreateNewTransaction(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
-	result, err := tc.transactionService.AddTransaction(c, dtos.CreateTransactionDto{
+	result, err := tc.transactionService.CreateTransaction(c, dtos.CreateTransactionDto{
 		InvestmentId: requestModel.InvestmentID,
 		TradingDate: pgtype.Timestamp{
 			Time:  tradingDate,
