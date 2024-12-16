@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"net/http"
 	transaction_model "stt/api/models/transaction"
 	db "stt/database/postgres/sqlc"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/xuri/excelize/v2"
 )
 
 type transactionController struct {
@@ -88,4 +90,55 @@ func (tc transactionController) CreateNewTransaction(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, result)
+}
+
+func (ac *transactionController) ImportTransactions(c *gin.Context) {
+	form, err := c.MultipartForm()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	fileHeader, ok := form.File["tcbs_transaction_report"]
+
+	if !ok {
+		c.JSON(http.StatusBadRequest, fmt.Errorf("file is empty"))
+		return
+	}
+	contentType := fileHeader[0].Header.Get("Content-Type")
+	if contentType != "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" {
+		c.JSON(http.StatusBadRequest, fmt.Errorf("content type is not in xlsx format"))
+		return
+	}
+
+	exportFile, _ := fileHeader[0].Open()
+
+	f, err := excelize.OpenReader(exportFile)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	defer func() {
+		f.Close()
+	}()
+	rows, err := f.GetRows("Sheet 1")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	//transactions := []db.Transaction{}
+	for i, row := range rows {
+		if i > 14 {
+			if row == nil {
+				break
+			}
+			// for range row {
+			// 	// tradingDate, err := time.Parse("02/01/2006", row[1])
+			// 	// if err != nil {
+			// 	// 	continue
+			// 	// }
+
+			// }
+			fmt.Printf("%s - %s\n", row[0], row[1])
+		}
+	}
 }
