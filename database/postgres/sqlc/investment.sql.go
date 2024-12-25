@@ -121,11 +121,16 @@ func (q *Queries) GetInvestmentById(ctx context.Context, id int64) (Investment, 
 
 const getInvestmentByTicker = `-- name: GetInvestmentByTicker :one
 SELECT id, account_id, ticker, company_name, buy_volume, buy_value, capital_cost, market_price, sell_volume, sell_value, current_volume, description, status, fee, tax, updated_date from investments
-where ticker=$1
+where ticker=$1 AND account_id =$2
 `
 
-func (q *Queries) GetInvestmentByTicker(ctx context.Context, ticker string) (Investment, error) {
-	row := q.db.QueryRow(ctx, getInvestmentByTicker, ticker)
+type GetInvestmentByTickerParams struct {
+	Ticker    string `json:"ticker"`
+	AccountID int64  `json:"account_id"`
+}
+
+func (q *Queries) GetInvestmentByTicker(ctx context.Context, arg GetInvestmentByTickerParams) (Investment, error) {
+	row := q.db.QueryRow(ctx, getInvestmentByTicker, arg.Ticker, arg.AccountID)
 	var i Investment
 	err := row.Scan(
 		&i.ID,

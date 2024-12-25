@@ -11,5 +11,5 @@ func InitTransactionRouter(group *gin.RouterGroup, transactionService sv_interfa
 	transactionController := controller.InitTransactionController(transactionService)
 	group.GET("/transactions", transactionController.GetPaging)
 	group.POST("/transactions", transactionController.CreateNewTransaction)
-	group.POST("/importing", transactionController.ImportTransactions)
+	group.POST("/tcbs-import", transactionController.ImportTransactions)
 }

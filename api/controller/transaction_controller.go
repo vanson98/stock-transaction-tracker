@@ -3,6 +3,8 @@ package controller
 import (
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 	transaction_model "stt/api/models/transaction"
 	db "stt/database/postgres/sqlc"
 	"stt/services/dtos"
@@ -98,12 +100,15 @@ func (ac *transactionController) ImportTransactions(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
-	fileHeader, ok := form.File["tcbs_transaction_report"]
+	fileHeader, ok := form.File["tcbs_transaction_export_data"]
+	account_id, ok := form.Value["account_id"]
 
 	if !ok {
-		c.JSON(http.StatusBadRequest, fmt.Errorf("file is empty"))
+		c.JSON(http.StatusBadRequest, fmt.Errorf("bad request"))
 		return
 	}
+	accountId, _ := strconv.Atoi(account_id[0])
+
 	contentType := fileHeader[0].Header.Get("Content-Type")
 	if contentType != "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" {
 		c.JSON(http.StatusBadRequest, fmt.Errorf("content type is not in xlsx format"))
@@ -125,20 +130,56 @@ func (ac *transactionController) ImportTransactions(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
-	//transactions := []db.Transaction{}
+	transactions := []db.Transaction{}
 	for i, row := range rows {
 		if i > 14 {
 			if row == nil {
 				break
 			}
-			// for range row {
-			// 	// tradingDate, err := time.Parse("02/01/2006", row[1])
-			// 	// if err != nil {
-			// 	// 	continue
-			// 	// }
-
-			// }
-			fmt.Printf("%s - %s\n", row[0], row[1])
+			tradingDate, err := time.Parse("02/01/2006", row[1])
+			if err != nil {
+				continue
+			}
+			var trade db.TradeType
+			if row[2] == "Mua" {
+				trade = db.TradeTypeBUY
+			} else {
+				trade = db.TradeTypeSELL
+			}
+			volume, _ := strconv.Atoi(row[3])
+			orderPrice, _ := strconv.Atoi(strings.Replace(row[4], ",", "", -1))
+			matchVolume, _ := strconv.Atoi(row[5])
+			matchPrice, _ := strconv.Atoi(strings.Replace(row[6], ",", "", -1))
+			matchValue, _ := strconv.Atoi(strings.Replace(row[7], ",", "", -1))
+			fee, _ := strconv.Atoi(strings.Replace(row[8], ",", "", -1))
+			tax, _ := strconv.Atoi(strings.Replace(row[9], ",", "", -1))
+			cost, _ := strconv.Atoi(strings.Replace(row[10], ",", "", -1))
+			returnValue, _ := strconv.Atoi(strings.Replace(row[11], ",", "", -1))
+			transaction := db.Transaction{
+				Ticker: row[0],
+				TradingDate: pgtype.Timestamp{
+					Time:  tradingDate,
+					Valid: true,
+				},
+				Trade:       trade,
+				Volume:      int64(volume),
+				OrderPrice:  int64(orderPrice),
+				MatchVolume: int64(matchVolume),
+				MatchPrice:  int64(matchPrice),
+				MatchValue:  int64(matchValue),
+				Fee:         int64(fee),
+				Tax:         int64(tax),
+				Cost:        int64(cost),
+				Return:      int64(returnValue),
+				Status:      db.TransactionStatusCOMPLETED,
+			}
+			transactions = append(transactions, transaction)
 		}
 	}
+	result, err := ac.transactionService.InsertTransaction(c, int64(accountId), transactions)
+	if err != nil || !result {
+		c.JSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, result)
 }

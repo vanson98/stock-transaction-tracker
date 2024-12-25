@@ -22,7 +22,7 @@ WHERE account_id=ANY(@account_ids::bigint[]) AND (ticker ILIKE @search_text::tex
 
 -- name: GetInvestmentByTicker :one
 SELECT * from investments
-where ticker=$1;
+where ticker=$1 AND account_id =$2;
 
 -- name: GetInvestmentsByAccountId :many
 select * from investments
