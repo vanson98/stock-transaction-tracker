@@ -45,7 +45,7 @@ func (tc transactionController) GetPaging(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
-	totalRow, err := tc.transactionService.CountTransaction(c, db.CountTransactionsParams{
+	sumInfo, err := tc.transactionService.GetSumTransactionInfo(c, db.GetSumTransactionInfoParams{
 		AccountIds: requestModel.AccountIds,
 		Ticker:     requestModel.Ticker,
 	})
@@ -53,9 +53,14 @@ func (tc transactionController) GetPaging(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
+
 	result := transaction_model.GetTransactionsPagingResponseModel{
-		Transactions: transactions,
-		Total:        int32(totalRow),
+		Transactions:  transactions,
+		TotalRow:      int32(sumInfo.TotalRows),
+		SumMatchValue: sumInfo.SumMatchValue,
+		SumFee:        sumInfo.SumFee,
+		SumTax:        sumInfo.SumTax,
+		SumReturn:     sumInfo.SumReturn,
 	}
 	c.JSON(http.StatusOK, result)
 }

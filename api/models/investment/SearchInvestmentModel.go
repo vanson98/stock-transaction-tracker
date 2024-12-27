@@ -1,7 +1,7 @@
 package investment_model
 
 type SearchInvestmentRequestModel struct {
-	AccountIds []int64 `form:"account_ids[]" binding:"required"`
+	AccountIds []int64 `form:"account_ids" binding:"required"`
 	SearchText string  `form:"search_text"`
 	OrderBy    string  `form:"order_by"`
 	SortType   string  `form:"sort_type"`

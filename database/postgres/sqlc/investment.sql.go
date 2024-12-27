@@ -196,16 +196,17 @@ func (q *Queries) GetInvestmentsByAccountId(ctx context.Context, accountID int64
 }
 
 const searchInvestmentPaging = `-- name: SearchInvestmentPaging :many
-SELECT  i.id, a.id AS account_id ,a.channel_name, i.ticker, i.buy_value, i.buy_volume, i.capital_cost, i.current_volume, i.market_price, i.sell_value, i.sell_volume, i.fee, i.tax, i.status from investments AS i
-JOIN accounts AS a ON i.account_id = a.id
-WHERE account_id = ANY($1::bigint[]) AND (ticker ILIKE $2::text OR company_name ILIKE $2::text)
+SELECT id, account_id, channel_name, ticker, buy_value, buy_volume, capital_cost, current_volume, market_price, sell_value, sell_volume, fee, tax, status, profit FROM investment_overview
+WHERE account_id = ANY($1::bigint[]) AND ticker ILIKE $2::text
 ORDER BY 
     CASE WHEN $3::text = 'ticker' AND $4::text = 'ascending' THEN ticker END ASC,
     CASE WHEN $3::text = 'ticker' AND $4::text = 'descending' THEN ticker END DESC,
     CASE WHEN $3::text = 'status' AND $4::text = 'ascending' THEN "status" END ASC,
     CASE WHEN $3::text = 'status' AND $4::text = 'descending' THEN "status" END DESC,
     CASE WHEN $3::text = 'channel_name' AND $4::text = 'descending' THEN "channel_name" END DESC,
-    CASE WHEN $3::text = 'channel_name' AND $4::text = 'ascending' THEN "channel_name" END ASC
+    CASE WHEN $3::text = 'channel_name' AND $4::text = 'ascending' THEN "channel_name" END ASC,
+    CASE WHEN $3::text = 'profit' AND $4::text = 'ascending' THEN profit END ASC,
+    CASE WHEN $3::text = 'profit' AND $4::text = 'descending' THEN profit END DESC
 OFFSET $5::int LIMIT $6::int
 `
 
@@ -218,24 +219,7 @@ type SearchInvestmentPagingParams struct {
 	TakeLimit  int32   `json:"take_limit"`
 }
 
-type SearchInvestmentPagingRow struct {
-	ID            int64            `json:"id"`
-	AccountID     int64            `json:"account_id"`
-	ChannelName   string           `json:"channel_name"`
-	Ticker        string           `json:"ticker"`
-	BuyValue      int64            `json:"buy_value"`
-	BuyVolume     int64            `json:"buy_volume"`
-	CapitalCost   int64            `json:"capital_cost"`
-	CurrentVolume int64            `json:"current_volume"`
-	MarketPrice   int64            `json:"market_price"`
-	SellValue     int64            `json:"sell_value"`
-	SellVolume    int64            `json:"sell_volume"`
-	Fee           int64            `json:"fee"`
-	Tax           int64            `json:"tax"`
-	Status        InvestmentStatus `json:"status"`
-}
-
-func (q *Queries) SearchInvestmentPaging(ctx context.Context, arg SearchInvestmentPagingParams) ([]SearchInvestmentPagingRow, error) {
+func (q *Queries) SearchInvestmentPaging(ctx context.Context, arg SearchInvestmentPagingParams) ([]InvestmentOverview, error) {
 	rows, err := q.db.Query(ctx, searchInvestmentPaging,
 		arg.AccountIds,
 		arg.SearchText,
@@ -248,9 +232,9 @@ func (q *Queries) SearchInvestmentPaging(ctx context.Context, arg SearchInvestme
 		return nil, err
 	}
 	defer rows.Close()
-	var items []SearchInvestmentPagingRow
+	var items []InvestmentOverview
 	for rows.Next() {
-		var i SearchInvestmentPagingRow
+		var i InvestmentOverview
 		if err := rows.Scan(
 			&i.ID,
 			&i.AccountID,
@@ -266,6 +250,7 @@ func (q *Queries) SearchInvestmentPaging(ctx context.Context, arg SearchInvestme
 			&i.Fee,
 			&i.Tax,
 			&i.Status,
+			&i.Profit,
 		); err != nil {
 			return nil, err
 		}

@@ -11,27 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const countTransactions = `-- name: CountTransactions :one
-SELECT COUNT(T.id)
-FROM investments AS I
-INNER JOIN transactions AS T ON I.id = T.investment_id
-WHERE I.account_id = ANY($1::bigint[]) AND
- 	  T.ticker LIKE 
-	  	CASE WHEN $2::text = '' THEN '%%' ELSE $2::text END
-`
-
-type CountTransactionsParams struct {
-	AccountIds []int64 `json:"account_ids"`
-	Ticker     string  `json:"ticker"`
-}
-
-func (q *Queries) CountTransactions(ctx context.Context, arg CountTransactionsParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countTransactions, arg.AccountIds, arg.Ticker)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
 const createTransaction = `-- name: CreateTransaction :one
 INSERT INTO transactions(investment_id,ticker,trading_date,trade,volume,order_price,match_volume,match_price,match_value,fee,tax,"cost","cost_of_goods_sold","return","status")
 VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
@@ -92,6 +71,42 @@ func (q *Queries) CreateTransaction(ctx context.Context, arg CreateTransactionPa
 		&i.CostOfGoodsSold,
 		&i.Return,
 		&i.Status,
+	)
+	return i, err
+}
+
+const getSumTransactionInfo = `-- name: GetSumTransactionInfo :one
+SELECT COUNT(T.id) AS total_rows, SUM( T.match_value) AS sum_match_value , SUM(T.fee) AS sum_fee, SUM(T.tax) AS sum_tax , SUM(T."return") AS sum_return
+FROM investments AS I
+INNER JOIN transactions AS T ON I.id = T.investment_id
+WHERE I.account_id = ANY($1::bigint[]) AND
+ T.ticker LIKE 
+	  	CASE WHEN $2::text = '' THEN '%%' ELSE $2::text END
+LIMIT 1
+`
+
+type GetSumTransactionInfoParams struct {
+	AccountIds []int64 `json:"account_ids"`
+	Ticker     string  `json:"ticker"`
+}
+
+type GetSumTransactionInfoRow struct {
+	TotalRows     int64 `json:"total_rows"`
+	SumMatchValue int64 `json:"sum_match_value"`
+	SumFee        int64 `json:"sum_fee"`
+	SumTax        int64 `json:"sum_tax"`
+	SumReturn     int64 `json:"sum_return"`
+}
+
+func (q *Queries) GetSumTransactionInfo(ctx context.Context, arg GetSumTransactionInfoParams) (GetSumTransactionInfoRow, error) {
+	row := q.db.QueryRow(ctx, getSumTransactionInfo, arg.AccountIds, arg.Ticker)
+	var i GetSumTransactionInfoRow
+	err := row.Scan(
+		&i.TotalRows,
+		&i.SumMatchValue,
+		&i.SumFee,
+		&i.SumTax,
+		&i.SumReturn,
 	)
 	return i, err
 }

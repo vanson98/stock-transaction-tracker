@@ -58,7 +58,7 @@ type InvestmentStatus string
 const (
 	InvestmentStatusInactive InvestmentStatus = "inactive"
 	InvestmentStatusActive   InvestmentStatus = "active"
-	InvestmentStatusBuyout   InvestmentStatus = "buyout"
+	InvestmentStatusSellout  InvestmentStatus = "sellout"
 )
 
 func (e *InvestmentStatus) Scan(src interface{}) error {
@@ -215,6 +215,24 @@ type Investment struct {
 	Fee           int64            `json:"fee"`
 	Tax           int64            `json:"tax"`
 	UpdatedDate   pgtype.Timestamp `json:"updated_date"`
+}
+
+type InvestmentOverview struct {
+	ID            int64            `json:"id"`
+	AccountID     int64            `json:"account_id"`
+	ChannelName   string           `json:"channel_name"`
+	Ticker        string           `json:"ticker"`
+	BuyValue      int64            `json:"buy_value"`
+	BuyVolume     int64            `json:"buy_volume"`
+	CapitalCost   int64            `json:"capital_cost"`
+	CurrentVolume int64            `json:"current_volume"`
+	MarketPrice   int64            `json:"market_price"`
+	SellValue     int64            `json:"sell_value"`
+	SellVolume    int64            `json:"sell_volume"`
+	Fee           int64            `json:"fee"`
+	Tax           int64            `json:"tax"`
+	Status        InvestmentStatus `json:"status"`
+	Profit        pgtype.Numeric   `json:"profit"`
 }
 
 type Transaction struct {

@@ -29,9 +29,9 @@ func (t *transactionService) GetPaging(ctx context.Context, param db.GetTransact
 	return t.store.GetTransactionsPaging(ctx, param)
 }
 
-// CountTransaction implements sv_interface.ITransactionService.
-func (t *transactionService) CountTransaction(ctx context.Context, param db.CountTransactionsParams) (int64, error) {
-	return t.store.CountTransactions(ctx, param)
+// GetSumTransactionInfo implements sv_interface.ITransactionService.
+func (t *transactionService) GetSumTransactionInfo(ctx context.Context, param db.GetSumTransactionInfoParams) (db.GetSumTransactionInfoRow, error) {
+	return t.store.GetSumTransactionInfo(ctx, param)
 }
 
 // GetById implements sv_interface.ITransactionService.
@@ -193,7 +193,7 @@ func (t *transactionService) InsertTransaction(ctx context.Context, accountId in
 
 				// update investment
 				if investment.CurrentVolume-transaction.MatchVolume == 0 {
-					investment.Status = db.InvestmentStatusBuyout
+					investment.Status = db.InvestmentStatusSellout
 				}
 				err = q.UpdateInvestmentWhenSeling(ctx, db.UpdateInvestmentWhenSelingParams{
 					ID:                    transaction.InvestmentID,
@@ -385,7 +385,7 @@ func (t *transactionService) createSellingTransaction(ctx context.Context, arg d
 			ID:     investment.AccountID,
 		})
 		if investment.CurrentVolume-transaction.MatchVolume == 0 {
-			investment.Status = db.InvestmentStatusBuyout
+			investment.Status = db.InvestmentStatusSellout
 		}
 		// update investment
 		err = query.UpdateInvestmentWhenSeling(ctx, db.UpdateInvestmentWhenSelingParams{

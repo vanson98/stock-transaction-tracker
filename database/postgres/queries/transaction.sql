@@ -24,11 +24,11 @@ ORDER BY
 	CASE WHEN @order_by::text= 'return' AND @order_type::text = 'ascending' THEN T.return END ASC
 OFFSET @from_offset::int LIMIT @to_limit::int;
 
-
--- name: CountTransactions :one
-SELECT COUNT(T.id)
+-- name: GetSumTransactionInfo :one
+SELECT COUNT(T.id) AS total_rows, SUM( T.match_value) AS sum_match_value , SUM(T.fee) AS sum_fee, SUM(T.tax) AS sum_tax , SUM(T."return") AS sum_return
 FROM investments AS I
 INNER JOIN transactions AS T ON I.id = T.investment_id
 WHERE I.account_id = ANY(@account_ids::bigint[]) AND
- 	  T.ticker LIKE 
-	  	CASE WHEN @ticker::text = '' THEN '%%' ELSE @ticker::text END;
+ T.ticker LIKE 
+	  	CASE WHEN @ticker::text = '' THEN '%%' ELSE @ticker::text END
+LIMIT 1;

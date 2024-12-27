@@ -224,7 +224,7 @@ func (mr *MockIInvestmentServiceMockRecorder) GetById(arg0, arg1 interface{}) *g
 }
 
 // GetByTicker mocks base method.
-func (m *MockIInvestmentService) GetByTicker(arg0 context.Context, arg1 string) (db.Investment, error) {
+func (m *MockIInvestmentService) GetByTicker(arg0 context.Context, arg1 db.GetInvestmentByTickerParams) (db.Investment, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetByTicker", arg0, arg1)
 	ret0, _ := ret[0].(db.Investment)
@@ -239,10 +239,10 @@ func (mr *MockIInvestmentServiceMockRecorder) GetByTicker(arg0, arg1 interface{}
 }
 
 // SearchPaging mocks base method.
-func (m *MockIInvestmentService) SearchPaging(arg0 context.Context, arg1 db.SearchInvestmentPagingParams) ([]db.SearchInvestmentPagingRow, error) {
+func (m *MockIInvestmentService) SearchPaging(arg0 context.Context, arg1 db.SearchInvestmentPagingParams) ([]db.InvestmentOverview, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SearchPaging", arg0, arg1)
-	ret0, _ := ret[0].([]db.SearchInvestmentPagingRow)
+	ret0, _ := ret[0].([]db.InvestmentOverview)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

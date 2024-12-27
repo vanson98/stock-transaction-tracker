@@ -25,7 +25,7 @@ func (ivs investmentService) Count(c context.Context, param db.CountInvestmentPa
 }
 
 // SearchPaging implements sv_interface.IInvestmentService.
-func (ivs investmentService) SearchPaging(c context.Context, param db.SearchInvestmentPagingParams) ([]db.SearchInvestmentPagingRow, error) {
+func (ivs investmentService) SearchPaging(c context.Context, param db.SearchInvestmentPagingParams) ([]db.InvestmentOverview, error) {
 	return ivs.store.SearchInvestmentPaging(c, param)
 }
 

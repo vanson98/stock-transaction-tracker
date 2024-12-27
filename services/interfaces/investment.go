@@ -11,7 +11,7 @@ type IInvestmentService interface {
 	GetById(c context.Context, id int64) (db.Investment, error)
 	//GetAll(c context.Context)
 	//Delete(c context.Context, id int64)
-	SearchPaging(c context.Context, param db.SearchInvestmentPagingParams) ([]db.SearchInvestmentPagingRow, error)
+	SearchPaging(c context.Context, param db.SearchInvestmentPagingParams) ([]db.InvestmentOverview, error)
 	Count(c context.Context, db db.CountInvestmentParams) (int64, error)
 	GetByTicker(ctx context.Context, params db.GetInvestmentByTickerParams) (db.Investment, error)
 }

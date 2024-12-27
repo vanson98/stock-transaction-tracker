@@ -1,0 +1,1 @@
+DROP VIEW investment_overview;
