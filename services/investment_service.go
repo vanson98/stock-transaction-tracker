@@ -25,7 +25,7 @@ func (ivs investmentService) Count(c context.Context, param db.CountInvestmentPa
 }
 
 // SearchPaging implements sv_interface.IInvestmentService.
-func (ivs investmentService) SearchPaging(c context.Context, param db.SearchInvestmentPagingParams) ([]db.Investment, error) {
+func (ivs investmentService) SearchPaging(c context.Context, param db.SearchInvestmentPagingParams) ([]db.InvestmentOverview, error) {
 	return ivs.store.SearchInvestmentPaging(c, param)
 }
 
@@ -42,8 +42,8 @@ func (i investmentService) Delete(c context.Context, id int64) {
 }
 
 // GetByTicker implements sv_interface.IInvestmentService.
-func (ivs investmentService) GetByTicker(ctx context.Context, ticker string) (db.Investment, error) {
-	return ivs.store.GetInvestmentByTicker(ctx, ticker)
+func (ivs investmentService) GetByTicker(ctx context.Context, params db.GetInvestmentByTickerParams) (db.Investment, error) {
+	return ivs.store.GetInvestmentByTicker(ctx, params)
 }
 
 // GetAll implements domain.IInvestmentService.

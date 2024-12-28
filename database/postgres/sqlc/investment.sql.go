@@ -13,16 +13,16 @@ import (
 
 const countInvestment = `-- name: CountInvestment :one
 SELECT COUNT(*) from investments
-WHERE account_id=$1 AND (ticker ILIKE $2::text OR company_name ILIKE $2::text)
+WHERE account_id=ANY($1::bigint[]) AND (ticker ILIKE $2::text OR company_name ILIKE $2::text)
 `
 
 type CountInvestmentParams struct {
-	AccountID  int64  `json:"account_id"`
-	SearchText string `json:"search_text"`
+	AccountIds []int64 `json:"account_ids"`
+	SearchText string  `json:"search_text"`
 }
 
 func (q *Queries) CountInvestment(ctx context.Context, arg CountInvestmentParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countInvestment, arg.AccountID, arg.SearchText)
+	row := q.db.QueryRow(ctx, countInvestment, arg.AccountIds, arg.SearchText)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -121,11 +121,16 @@ func (q *Queries) GetInvestmentById(ctx context.Context, id int64) (Investment, 
 
 const getInvestmentByTicker = `-- name: GetInvestmentByTicker :one
 SELECT id, account_id, ticker, company_name, buy_volume, buy_value, capital_cost, market_price, sell_volume, sell_value, current_volume, description, status, fee, tax, updated_date from investments
-where ticker=$1
+where ticker=$1 AND account_id =$2
 `
 
-func (q *Queries) GetInvestmentByTicker(ctx context.Context, ticker string) (Investment, error) {
-	row := q.db.QueryRow(ctx, getInvestmentByTicker, ticker)
+type GetInvestmentByTickerParams struct {
+	Ticker    string `json:"ticker"`
+	AccountID int64  `json:"account_id"`
+}
+
+func (q *Queries) GetInvestmentByTicker(ctx context.Context, arg GetInvestmentByTickerParams) (Investment, error) {
+	row := q.db.QueryRow(ctx, getInvestmentByTicker, arg.Ticker, arg.AccountID)
 	var i Investment
 	err := row.Scan(
 		&i.ID,
@@ -191,28 +196,32 @@ func (q *Queries) GetInvestmentsByAccountId(ctx context.Context, accountID int64
 }
 
 const searchInvestmentPaging = `-- name: SearchInvestmentPaging :many
-SELECT id, account_id, ticker, company_name, buy_volume, buy_value, capital_cost, market_price, sell_volume, sell_value, current_volume, description, status, fee, tax, updated_date from investments
-WHERE account_id=$1 AND (ticker ILIKE $2::text OR company_name ILIKE $2::text)
+SELECT id, account_id, channel_name, ticker, buy_value, buy_volume, capital_cost, current_volume, market_price, sell_value, sell_volume, fee, tax, status, profit FROM investment_overview
+WHERE account_id = ANY($1::bigint[]) AND ticker ILIKE $2::text
 ORDER BY 
     CASE WHEN $3::text = 'ticker' AND $4::text = 'ascending' THEN ticker END ASC,
     CASE WHEN $3::text = 'ticker' AND $4::text = 'descending' THEN ticker END DESC,
     CASE WHEN $3::text = 'status' AND $4::text = 'ascending' THEN "status" END ASC,
-    CASE WHEN $3::text = 'status' AND $4::text = 'descending' THEN "status" END DESC
+    CASE WHEN $3::text = 'status' AND $4::text = 'descending' THEN "status" END DESC,
+    CASE WHEN $3::text = 'channel_name' AND $4::text = 'descending' THEN "channel_name" END DESC,
+    CASE WHEN $3::text = 'channel_name' AND $4::text = 'ascending' THEN "channel_name" END ASC,
+    CASE WHEN $3::text = 'profit' AND $4::text = 'ascending' THEN profit END ASC,
+    CASE WHEN $3::text = 'profit' AND $4::text = 'descending' THEN profit END DESC
 OFFSET $5::int LIMIT $6::int
 `
 
 type SearchInvestmentPagingParams struct {
-	AccountID  int64  `json:"account_id"`
-	SearchText string `json:"search_text"`
-	OrderBy    string `json:"order_by"`
-	SortType   string `json:"sort_type"`
-	FromOffset int32  `json:"from_offset"`
-	TakeLimit  int32  `json:"take_limit"`
+	AccountIds []int64 `json:"account_ids"`
+	SearchText string  `json:"search_text"`
+	OrderBy    string  `json:"order_by"`
+	SortType   string  `json:"sort_type"`
+	FromOffset int32   `json:"from_offset"`
+	TakeLimit  int32   `json:"take_limit"`
 }
 
-func (q *Queries) SearchInvestmentPaging(ctx context.Context, arg SearchInvestmentPagingParams) ([]Investment, error) {
+func (q *Queries) SearchInvestmentPaging(ctx context.Context, arg SearchInvestmentPagingParams) ([]InvestmentOverview, error) {
 	rows, err := q.db.Query(ctx, searchInvestmentPaging,
-		arg.AccountID,
+		arg.AccountIds,
 		arg.SearchText,
 		arg.OrderBy,
 		arg.SortType,
@@ -223,26 +232,25 @@ func (q *Queries) SearchInvestmentPaging(ctx context.Context, arg SearchInvestme
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Investment
+	var items []InvestmentOverview
 	for rows.Next() {
-		var i Investment
+		var i InvestmentOverview
 		if err := rows.Scan(
 			&i.ID,
 			&i.AccountID,
+			&i.ChannelName,
 			&i.Ticker,
-			&i.CompanyName,
-			&i.BuyVolume,
 			&i.BuyValue,
+			&i.BuyVolume,
 			&i.CapitalCost,
-			&i.MarketPrice,
-			&i.SellVolume,
-			&i.SellValue,
 			&i.CurrentVolume,
-			&i.Description,
-			&i.Status,
+			&i.MarketPrice,
+			&i.SellValue,
+			&i.SellVolume,
 			&i.Fee,
 			&i.Tax,
-			&i.UpdatedDate,
+			&i.Status,
+			&i.Profit,
 		); err != nil {
 			return nil, err
 		}

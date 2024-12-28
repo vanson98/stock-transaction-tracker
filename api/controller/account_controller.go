@@ -10,6 +10,7 @@ import (
 	sv_interface "stt/services/interfaces"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
@@ -61,14 +62,14 @@ func (ac *AccountController) GetAccountById(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, account)
 }
 
-func (ac *AccountController) GetAccountInfoById(ctx *gin.Context) {
+func (ac *AccountController) GetAccountInfoByIds(ctx *gin.Context) {
 	var requestData account_model.GetAccountInfoRequest
-	err := ctx.BindUri(&requestData)
+	err := ctx.ShouldBindQuery(&requestData)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
-	acc, err := ac.AccountService.GetAccountInfoById(ctx, requestData.Id)
+	acc, err := ac.AccountService.GetAccountInfoByIds(ctx, requestData.Ids)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -77,10 +78,35 @@ func (ac *AccountController) GetAccountInfoById(ctx *gin.Context) {
 }
 
 func (ac *AccountController) GetListAccount(ctx *gin.Context) {
-	accounts, err := ac.AccountService.ListAllAccount(ctx)
+	owner := ctx.Request.URL.Query().Get("owner")
+	if owner == "" {
+		ctx.JSON(http.StatusBadRequest, errorResponse(fmt.Errorf("required owner")))
+		return
+	}
+	accounts, err := ac.AccountService.ListAllByOwner(ctx, owner)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
+	}
+	ctx.JSON(http.StatusOK, accounts)
+}
+
+func (ac *AccountController) GetAccoutPaging(ctx *gin.Context) {
+	requestDataModel := account_model.SearchAccountRequest{}
+	err := ctx.ShouldBindQuery(&requestDataModel)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	accounts, err := ac.AccountService.GetAllByOwner(ctx, requestDataModel.Onwer)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		} else {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
 	}
 	ctx.JSON(http.StatusOK, accounts)
 }

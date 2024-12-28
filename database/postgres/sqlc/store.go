@@ -26,13 +26,16 @@ func NewStore(cnnPool *pgxpool.Pool) IStore {
 }
 
 func (store *DBStore) ExecTx(ctx context.Context, fn func(q *Queries) (interface{}, error)) (interface{}, error) {
+
 	tx, err := store.connectionPool.BeginTx(ctx, pgx.TxOptions{
 		IsoLevel: pgx.ReadCommitted,
 	})
+
+	transactionQueries := store.WithTx(tx)
 	if err != nil {
 		return nil, err
 	}
-	result, err := fn(store.Queries)
+	result, err := fn(transactionQueries)
 
 	if err != nil {
 		if rbErr := tx.Rollback(ctx); rbErr != nil {

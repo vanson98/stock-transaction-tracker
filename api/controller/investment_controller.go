@@ -23,14 +23,14 @@ func InitInvestmentController(investmentService sv_interface.IInvestmentService)
 }
 
 func (ic *InvestmentController) Search(c *gin.Context) {
-	var requestModel investment_model.SearchInvestmentModel
+	var requestModel investment_model.SearchInvestmentRequestModel
 	err := c.ShouldBindQuery(&requestModel)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 	var searchPram = db.SearchInvestmentPagingParams{
-		AccountID:  requestModel.AccountId,
+		AccountIds: requestModel.AccountIds,
 		SearchText: "%" + requestModel.SearchText + "%",
 		OrderBy:    requestModel.OrderBy,
 		SortType:   requestModel.SortType,
@@ -43,7 +43,7 @@ func (ic *InvestmentController) Search(c *gin.Context) {
 		return
 	}
 	totalResult, err := ic.investmentService.Count(c, db.CountInvestmentParams{
-		AccountID:  requestModel.AccountId,
+		AccountIds: requestModel.AccountIds,
 		SearchText: searchPram.SearchText,
 	})
 	if err != nil && err != pgx.ErrNoRows {

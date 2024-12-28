@@ -5,7 +5,6 @@ import (
 )
 
 type CreateTransactionModel struct {
-	AccountId    int64  `json:"account_id" binding:"required,min=1"`
 	InvestmentID int64  `json:"investment_id" binding:"required"`
 	TradingDate  string `json:"trading_date" binding:"required"`
 	Trade        string `json:"trade" binding:"trade"`

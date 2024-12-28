@@ -11,7 +11,6 @@ import (
 type Querier interface {
 	AddAccountBalance(ctx context.Context, arg AddAccountBalanceParams) (Account, error)
 	CountInvestment(ctx context.Context, arg CountInvestmentParams) (int64, error)
-	CountTransactions(ctx context.Context, arg CountTransactionsParams) (int64, error)
 	CreateAccount(ctx context.Context, arg CreateAccountParams) (Account, error)
 	CreateEntry(ctx context.Context, arg CreateEntryParams) (Entry, error)
 	CreateInvestment(ctx context.Context, arg CreateInvestmentParams) (Investment, error)
@@ -20,17 +19,18 @@ type Querier interface {
 	DeleteAccount(ctx context.Context, id int64) error
 	GetAccountById(ctx context.Context, id int64) (Account, error)
 	GetAccountForUpdate(ctx context.Context, id int64) (Account, error)
-	GetAccountInfoById(ctx context.Context, id int64) (GetAccountInfoByIdRow, error)
-	GetAccountsPaging(ctx context.Context, arg GetAccountsPagingParams) ([]Account, error)
+	GetAccountInfoByIds(ctx context.Context, accountIds []int64) ([]GetAccountInfoByIdsRow, error)
+	GetAccountPaging(ctx context.Context, owner string) ([]GetAccountPagingRow, error)
 	GetEntryById(ctx context.Context, id int64) (Entry, error)
 	GetInvestmentById(ctx context.Context, id int64) (Investment, error)
-	GetInvestmentByTicker(ctx context.Context, ticker string) (Investment, error)
+	GetInvestmentByTicker(ctx context.Context, arg GetInvestmentByTickerParams) (Investment, error)
 	GetInvestmentsByAccountId(ctx context.Context, accountID int64) ([]Investment, error)
+	GetSumTransactionInfo(ctx context.Context, arg GetSumTransactionInfoParams) (GetSumTransactionInfoRow, error)
 	GetTransactionById(ctx context.Context, id int64) (Transaction, error)
 	GetTransactionsPaging(ctx context.Context, arg GetTransactionsPagingParams) ([]GetTransactionsPagingRow, error)
 	GetUser(ctx context.Context, username string) (User, error)
-	ListAllAccount(ctx context.Context) ([]ListAllAccountRow, error)
-	SearchInvestmentPaging(ctx context.Context, arg SearchInvestmentPagingParams) ([]Investment, error)
+	ListAllAccount(ctx context.Context, owner string) ([]ListAllAccountRow, error)
+	SearchInvestmentPaging(ctx context.Context, arg SearchInvestmentPagingParams) ([]InvestmentOverview, error)
 	UpdateInvestmentStatus(ctx context.Context, arg UpdateInvestmentStatusParams) error
 	UpdateInvestmentWhenBuying(ctx context.Context, arg UpdateInvestmentWhenBuyingParams) error
 	UpdateInvestmentWhenSeling(ctx context.Context, arg UpdateInvestmentWhenSelingParams) error

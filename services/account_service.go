@@ -23,8 +23,8 @@ func InitAccountService(store db.IStore, timeout time.Duration) sv_interface.IAc
 }
 
 // GetAccountInfoById implements sv_interface.IAccountService.
-func (as accountService) GetAccountInfoById(ctx context.Context, id int64) (db.GetAccountInfoByIdRow, error) {
-	return as.store.GetAccountInfoById(ctx, id)
+func (as accountService) GetAccountInfoByIds(ctx context.Context, ids []int64) ([]db.GetAccountInfoByIdsRow, error) {
+	return as.store.GetAccountInfoByIds(ctx, ids)
 }
 
 // CreateNew implements sv_interface.IAccountService.
@@ -33,8 +33,8 @@ func (as accountService) CreateNew(ctx context.Context, param db.CreateAccountPa
 }
 
 // ListAllAccount implements sv_interface.IAccountService.
-func (as accountService) ListAllAccount(ctx context.Context) ([]db.ListAllAccountRow, error) {
-	return as.store.ListAllAccount(ctx)
+func (as accountService) ListAllByOwner(ctx context.Context, owner string) ([]db.ListAllAccountRow, error) {
+	return as.store.ListAllAccount(ctx, owner)
 }
 
 // GetById implements sv_interface.IAccountService.
@@ -43,8 +43,8 @@ func (as accountService) GetById(ctx context.Context, id int64) (db.Account, err
 }
 
 // GetAllPaging implements sv_interface.IAccountService.
-func (as accountService) GetAllPaging(ctx context.Context, param db.GetAccountsPagingParams) ([]db.Account, error) {
-	return as.store.GetAccountsPaging(ctx, param)
+func (as accountService) GetAllByOwner(ctx context.Context, owner string) ([]db.GetAccountPagingRow, error) {
+	return as.store.GetAccountPaging(ctx, owner)
 }
 
 // UpdateBalance implements sv_interface.IAccountService.

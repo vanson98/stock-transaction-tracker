@@ -11,27 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const countTransactions = `-- name: CountTransactions :one
-SELECT COUNT(T.id)
-FROM investments AS I
-INNER JOIN transactions AS T ON I.id = T.investment_id
-WHERE I.account_id = $1 AND
- 	  T.ticker LIKE 
-	  	CASE WHEN $2::text = '' THEN '%%' ELSE $2::text END
-`
-
-type CountTransactionsParams struct {
-	AccountID int64  `json:"account_id"`
-	Ticker    string `json:"ticker"`
-}
-
-func (q *Queries) CountTransactions(ctx context.Context, arg CountTransactionsParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countTransactions, arg.AccountID, arg.Ticker)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
 const createTransaction = `-- name: CreateTransaction :one
 INSERT INTO transactions(investment_id,ticker,trading_date,trade,volume,order_price,match_volume,match_price,match_value,fee,tax,"cost","cost_of_goods_sold","return","status")
 VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
@@ -96,6 +75,42 @@ func (q *Queries) CreateTransaction(ctx context.Context, arg CreateTransactionPa
 	return i, err
 }
 
+const getSumTransactionInfo = `-- name: GetSumTransactionInfo :one
+SELECT COUNT(T.id) AS total_rows, SUM( T.match_value) AS sum_match_value , SUM(T.fee) AS sum_fee, SUM(T.tax) AS sum_tax , SUM(T."return") AS sum_return
+FROM investments AS I
+INNER JOIN transactions AS T ON I.id = T.investment_id
+WHERE I.account_id = ANY($1::bigint[]) AND
+ T.ticker LIKE 
+	  	CASE WHEN $2::text = '' THEN '%%' ELSE $2::text END
+LIMIT 1
+`
+
+type GetSumTransactionInfoParams struct {
+	AccountIds []int64 `json:"account_ids"`
+	Ticker     string  `json:"ticker"`
+}
+
+type GetSumTransactionInfoRow struct {
+	TotalRows     int64 `json:"total_rows"`
+	SumMatchValue int64 `json:"sum_match_value"`
+	SumFee        int64 `json:"sum_fee"`
+	SumTax        int64 `json:"sum_tax"`
+	SumReturn     int64 `json:"sum_return"`
+}
+
+func (q *Queries) GetSumTransactionInfo(ctx context.Context, arg GetSumTransactionInfoParams) (GetSumTransactionInfoRow, error) {
+	row := q.db.QueryRow(ctx, getSumTransactionInfo, arg.AccountIds, arg.Ticker)
+	var i GetSumTransactionInfoRow
+	err := row.Scan(
+		&i.TotalRows,
+		&i.SumMatchValue,
+		&i.SumFee,
+		&i.SumTax,
+		&i.SumReturn,
+	)
+	return i, err
+}
+
 const getTransactionById = `-- name: GetTransactionById :one
 select id, investment_id, ticker, trading_date, trade, volume, order_price, match_volume, match_price, match_value, fee, tax, cost, cost_of_goods_sold, return, status from transactions
 where id = $1
@@ -126,10 +141,11 @@ func (q *Queries) GetTransactionById(ctx context.Context, id int64) (Transaction
 }
 
 const getTransactionsPaging = `-- name: GetTransactionsPaging :many
-SELECT T.id, to_char(T.trading_date,'dd/mm/yyyy') as trading_date, T.ticker, T.trade, T.volume, T.order_price, T.match_volume, T.match_price, T.match_value, T.fee, T.tax, T."cost", T.cost_of_goods_sold, T."return", T.status
+SELECT A.channel_name, T.id, to_char(T.trading_date,'dd/mm/yyyy') as trading_date, T.ticker, T.trade, T.volume, T.order_price, T.match_volume, T.match_price, T.match_value, T.fee, T.tax, T."cost", T.cost_of_goods_sold, T."return", T.status
 FROM investments AS I
 INNER JOIN transactions AS T ON I.id = T.investment_id
-WHERE I.account_id = $1 AND
+INNER JOIN accounts AS A ON I.account_id = A.id
+WHERE I.account_id = ANY($1::bigint[]) AND
  	  T.ticker LIKE 
 	  	CASE WHEN $2::text = '' THEN '%%' ELSE $2::text END
 ORDER BY 
@@ -143,15 +159,16 @@ OFFSET $5::int LIMIT $6::int
 `
 
 type GetTransactionsPagingParams struct {
-	AccountID  int64  `json:"account_id"`
-	Ticker     string `json:"ticker"`
-	OrderBy    string `json:"order_by"`
-	OrderType  string `json:"order_type"`
-	FromOffset int32  `json:"from_offset"`
-	ToLimit    int32  `json:"to_limit"`
+	AccountIds []int64 `json:"account_ids"`
+	Ticker     string  `json:"ticker"`
+	OrderBy    string  `json:"order_by"`
+	OrderType  string  `json:"order_type"`
+	FromOffset int32   `json:"from_offset"`
+	ToLimit    int32   `json:"to_limit"`
 }
 
 type GetTransactionsPagingRow struct {
+	ChannelName     string            `json:"channel_name"`
 	ID              int64             `json:"id"`
 	TradingDate     string            `json:"trading_date"`
 	Ticker          string            `json:"ticker"`
@@ -171,7 +188,7 @@ type GetTransactionsPagingRow struct {
 
 func (q *Queries) GetTransactionsPaging(ctx context.Context, arg GetTransactionsPagingParams) ([]GetTransactionsPagingRow, error) {
 	rows, err := q.db.Query(ctx, getTransactionsPaging,
-		arg.AccountID,
+		arg.AccountIds,
 		arg.Ticker,
 		arg.OrderBy,
 		arg.OrderType,
@@ -186,6 +203,7 @@ func (q *Queries) GetTransactionsPaging(ctx context.Context, arg GetTransactions
 	for rows.Next() {
 		var i GetTransactionsPagingRow
 		if err := rows.Scan(
+			&i.ChannelName,
 			&i.ID,
 			&i.TradingDate,
 			&i.Ticker,

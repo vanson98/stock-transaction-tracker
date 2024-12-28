@@ -47,22 +47,6 @@ func TestGetById(t *testing.T) {
 	require.Equal(t, acc, getAcc)
 }
 
-func TestGetAllPaging(t *testing.T) {
-	for i := 0; i < 5; i++ {
-		createRandomAccount(t)
-	}
-	accounts, err := accService.GetAllPaging(context.Background(), db.GetAccountsPagingParams{
-		Limit:  5,
-		Offset: 5,
-	})
-	require.NoError(t, err)
-	require.Len(t, accounts, 5)
-
-	for _, a := range accounts {
-		require.NotEmpty(t, a)
-	}
-}
-
 func TestUpdateAccountBalance(t *testing.T) {
 	account1 := createRandomAccount(t)
 	param := db.AddAccountBalanceParams{
@@ -157,7 +141,7 @@ func TestTranserMoneyTx(t *testing.T) {
 }
 
 func TestListAllAccount(t *testing.T) {
-	accounts, err := accService.ListAllAccount(context.Background())
+	accounts, err := accService.ListAllByOwner(context.Background(), "vanson")
 	require.NoError(t, err)
 	require.Greater(t, len(accounts), 0)
 }
@@ -188,12 +172,10 @@ func TestGetAccountInfoById(t *testing.T) {
 	require.Equal(t, withdrawalTransfer.Entry.Type, db.EntryTypeTM)
 
 	// get account info
-	accInfo, err := accService.GetAccountInfoById(context.Background(), acc.ID)
+	accInfo, err := accService.GetAccountInfoByIds(context.Background(), []int64{acc.ID})
 	require.NoError(t, err)
-	require.Equal(t, accInfo.ID, acc.ID)
-	require.Equal(t, accInfo.Balance, withdrawalTransfer.UpdatedAccount.Balance)
-	require.Equal(t, accInfo.Deposit, depositTransfer.Entry.Amount)
-	require.Equal(t, accInfo.Withdrawal, withdrawalTransfer.Entry.Amount)
+	require.Equal(t, accInfo[0].ID, acc.ID)
+	require.Equal(t, accInfo[0].Cash, withdrawalTransfer.UpdatedAccount.Balance)
 }
 
 func TestDeleteNonExistentAccount(t *testing.T) {

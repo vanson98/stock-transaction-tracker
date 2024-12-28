@@ -44,3 +44,14 @@ func TestCreateInvestment(t *testing.T) {
 	acc := createRandomAccount(t)
 	createRandomInvestmnet(t, acc.ID)
 }
+
+func TestGetInvestmentByTicker(t *testing.T) {
+	acc := createRandomAccount(t)
+	ivm := createRandomInvestmnet(t, acc.ID)
+	ivm2, err := investmentService.GetByTicker(context.Background(), db.GetInvestmentByTickerParams{
+		Ticker:    ivm.Ticker,
+		AccountID: acc.ID,
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, ivm2)
+}

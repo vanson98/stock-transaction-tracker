@@ -19,7 +19,6 @@ func TestAddTransaction(t *testing.T) {
 	// create transaction params
 	trans_params := []dtos.CreateTransactionDto{
 		{
-			AccountId:    account.ID,
 			InvestmentId: investment.ID,
 			TradingDate: pgtype.Timestamp{
 				Time:  time.Date(2024, 07, 31, 9, 0, 0, 0, time.UTC),
@@ -35,7 +34,6 @@ func TestAddTransaction(t *testing.T) {
 			Status:      db.TransactionStatusCOMPLETED,
 		},
 		{
-			AccountId:    account.ID,
 			InvestmentId: investment.ID,
 			TradingDate: pgtype.Timestamp{
 				Time:  time.Date(2024, 8, 2, 9, 0, 0, 0, time.UTC),
@@ -51,7 +49,6 @@ func TestAddTransaction(t *testing.T) {
 			Status:      db.TransactionStatusCOMPLETED,
 		},
 		{
-			AccountId:    account.ID,
 			InvestmentId: investment.ID,
 			TradingDate: pgtype.Timestamp{
 				Time:  time.Date(2024, 8, 3, 10, 0, 0, 0, time.UTC),
@@ -68,7 +65,7 @@ func TestAddTransaction(t *testing.T) {
 		},
 	}
 	for _, param := range trans_params {
-		transaction, err := tranService.AddTransaction(context.Background(), param)
+		transaction, err := tranService.CreateTransaction(context.Background(), param)
 		require.NoError(t, err)
 		require.NotEmpty(t, transaction)
 		require.Equal(t, transaction.InvestmentID, investment.ID)

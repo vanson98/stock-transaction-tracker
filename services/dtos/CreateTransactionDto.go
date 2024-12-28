@@ -7,7 +7,6 @@ import (
 )
 
 type CreateTransactionDto struct {
-	AccountId    int64
 	InvestmentId int64
 	TradingDate  pgtype.Timestamp
 	Trade        db.TradeType
