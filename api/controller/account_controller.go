@@ -46,22 +46,6 @@ func (ac *AccountController) CreateNewAccount(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, account)
 }
 
-func (ac *AccountController) GetAccountById(ctx *gin.Context) {
-	requestParam := account_model.GetAccountRequest{}
-	err := ctx.ShouldBindUri(&requestParam)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	account, err := ac.AccountService.GetById(ctx, requestParam.Id)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-	ctx.JSON(http.StatusOK, account)
-}
-
 func (ac *AccountController) GetAccountInfoByIds(ctx *gin.Context) {
 	var requestData account_model.GetAccountInfoRequest
 	err := ctx.ShouldBindQuery(&requestData)

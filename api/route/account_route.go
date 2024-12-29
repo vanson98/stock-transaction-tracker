@@ -15,7 +15,6 @@ func InitAccountRouter(routerGroup *gin.RouterGroup, accountService sv_interface
 	routerGroup.POST("/accounts", accountController.CreateNewAccount)
 	routerGroup.PUT("/account-transfer", accountController.TransferMoney)
 	routerGroup.GET("/accounts", accountController.GetListAccount)
-	routerGroup.GET("/accounts/:id", accountController.GetAccountById)
 	routerGroup.GET("/account-info", accountController.GetAccountInfoByIds)
 	routerGroup.GET("/account-search", accountController.GetAccoutPaging)
 }
