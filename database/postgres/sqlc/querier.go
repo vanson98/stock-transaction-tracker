@@ -16,7 +16,7 @@ type Querier interface {
 	CreateInvestment(ctx context.Context, arg CreateInvestmentParams) (Investment, error)
 	CreateTransaction(ctx context.Context, arg CreateTransactionParams) (Transaction, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
-	DeleteAccount(ctx context.Context, id int64) error
+	DeleteAccount(ctx context.Context, id int64) (Account, error)
 	GetAccountById(ctx context.Context, id int64) (Account, error)
 	GetAccountForUpdate(ctx context.Context, id int64) (Account, error)
 	GetAccountInfoByIds(ctx context.Context, accountIds []int64) ([]GetAccountInfoByIdsRow, error)

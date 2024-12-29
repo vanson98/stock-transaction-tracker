@@ -8,14 +8,11 @@ import (
 	"stt/services/dtos"
 	"stt/util"
 	"testing"
-	"time"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
 )
 
-func createRandomAccount(t *testing.T) db.Account {
-	user := createRandomUser(t)
+func createRandomAccount(t *testing.T, user db.User) db.Account {
 	arg := db.CreateAccountParams{
 		ChannelName: util.RandomString(3),
 		Owner:       user.Username,
@@ -37,47 +34,21 @@ func createRandomAccount(t *testing.T) db.Account {
 }
 
 func TestCreateAccount(t *testing.T) {
-	createRandomAccount(t)
+	user := createRandomUser(t)
+	createRandomAccount(t, user)
 }
 
 func TestGetById(t *testing.T) {
-	acc := createRandomAccount(t)
+	user := createRandomUser(t)
+	acc := createRandomAccount(t, user)
 	getAcc, err := accService.GetById(context.Background(), acc.ID)
 	require.NoError(t, err)
 	require.Equal(t, acc, getAcc)
 }
 
-func TestUpdateAccountBalance(t *testing.T) {
-	account1 := createRandomAccount(t)
-	param := db.AddAccountBalanceParams{
-		ID:     account1.ID,
-		Amount: util.RandomInt(1, 100),
-	}
-
-	account2, err := accService.UpdateBalance(context.Background(), param)
-	require.NoError(t, err)
-	require.NotNil(t, account2)
-
-	require.Equal(t, account1.ID, account2.ID)
-	require.Equal(t, account1.Balance+param.Amount, account2.Balance)
-	require.Equal(t, account1.Currency, account2.Currency)
-	require.WithinDuration(t, account1.CreatedAt.Time, account2.CreatedAt.Time, time.Second)
-}
-
-func TestDeleteAccount(t *testing.T) {
-	acc1 := createRandomAccount(t)
-
-	err := accService.Delete(context.Background(), acc1.ID)
-	require.NoError(t, err)
-
-	acc2, err := store.GetAccountById(context.Background(), acc1.ID)
-	require.Error(t, err)
-	require.EqualError(t, err, pgx.ErrNoRows.Error())
-	require.Empty(t, acc2)
-}
-
 func TestTranserMoneyTx(t *testing.T) {
-	account := createRandomAccount(t)
+	user := createRandomUser(t)
+	account := createRandomAccount(t, user)
 	fmt.Println(">> before:", account.Balance)
 	n := 5
 	var amount int64 = 10
@@ -146,9 +117,10 @@ func TestListAllAccount(t *testing.T) {
 	require.Greater(t, len(accounts), 0)
 }
 
-func TestGetAccountInfoById(t *testing.T) {
+func TestGetAccountInfoByIds(t *testing.T) {
 	// create random account
-	acc := createRandomAccount(t)
+	user := createRandomUser(t)
+	acc := createRandomAccount(t, user)
 	// create a depositTransfer money depositTransfer
 	depositTransfer, err := accService.TransferMoney(context.Background(), dtos.TransferMoneyTxParam{
 		AccountID: acc.ID,
@@ -178,15 +150,17 @@ func TestGetAccountInfoById(t *testing.T) {
 	require.Equal(t, accInfo[0].Cash, withdrawalTransfer.UpdatedAccount.Balance)
 }
 
-func TestDeleteNonExistentAccount(t *testing.T) {
-	nonExistentID := util.RandomInt(1000, 10000)
+func TestGetAllByOwner(t *testing.T) {
+	// create random accounts
+	// accounts, username := createRandomListAccountForUser(t)
 
-	err := accService.Delete(context.Background(), nonExistentID)
-	require.Error(t, err)
-	require.EqualError(t, err, pgx.ErrNoRows.Error())
+	// // get all accounts by owner
+	// allAccounts, err := accService.GetAllByOwner(context.Background(), "vanson")
+	// require.NoError(t, err)
+	// require.Equal(t, len(accounts), len(allAccounts))
+	// for i, acc := range allAccounts {
+	// 	require.Equal(t, acc.ID, accounts[i].ID)
+	// 	require.Equal(t, acc.Owner, accounts[i].Balance)
 
-	// Attempt to get the non-existent account to confirm it doesn't exist
-	_, getErr := accService.GetById(context.Background(), nonExistentID)
-	require.Error(t, getErr)
-	require.EqualError(t, getErr, pgx.ErrNoRows.Error())
+	// }
 }

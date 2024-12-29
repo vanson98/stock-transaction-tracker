@@ -24,7 +24,7 @@ SUM(
 ) AS market_value
 FROM accounts as a
 LEFT JOIN investments AS i ON a.id = i.account_id
-WHERE a.id = ANY(@account_ids::bigint[])
+WHERE a.id = ANY(@account_ids::bigint[]) AND i.status = 'active'
 GROUP BY a.id,  a.channel_name, a.balance;
 
 -- name: AddAccountBalance :one
@@ -33,9 +33,6 @@ SET balance = balance + sqlc.arg(amount)
 WHERE id = sqlc.arg(id)
 RETURNING *;
 
--- name: DeleteAccount :exec
-DELETE FROM accounts
-WHERE id=$1;
 
 -- name: ListAllAccount :many
 select a.id, a.channel_name from accounts as a
