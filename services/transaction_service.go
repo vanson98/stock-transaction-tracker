@@ -318,7 +318,7 @@ func (t *transactionService) createBuyingTransaction(ctx context.Context, arg dt
 				Valid: true,
 			},
 		})
-		err = fmt.Errorf("test error")
+
 		if err != nil {
 			return nil, err
 		}
