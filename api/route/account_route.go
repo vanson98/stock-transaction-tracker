@@ -13,8 +13,8 @@ func InitAccountRouter(routerGroup *gin.RouterGroup, accountService sv_interface
 	}
 
 	routerGroup.POST("/accounts", accountController.CreateNewAccount)
+	routerGroup.GET("/asset-catalog", accountController.GetAssetCatalog)
 	routerGroup.PUT("/account-transfer", accountController.TransferMoney)
 	routerGroup.GET("/accounts", accountController.GetListAccount)
-	routerGroup.GET("/account-info", accountController.GetAccountInfoByIds)
-	routerGroup.GET("/account-search", accountController.GetAccoutPaging)
+	routerGroup.GET("/account-search", accountController.GetAllAccountOverview)
 }

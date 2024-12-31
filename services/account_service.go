@@ -22,14 +22,17 @@ func InitAccountService(store db.IStore, timeout time.Duration) sv_interface.IAc
 	}
 }
 
-// GetAccountInfoById implements sv_interface.IAccountService.
-func (as accountService) GetAccountInfoByIds(ctx context.Context, ids []int64) ([]db.GetAccountInfoByIdsRow, error) {
-	return as.store.GetAccountInfoByIds(ctx, ids)
-}
-
 // CreateNew implements sv_interface.IAccountService.
 func (as accountService) CreateNew(ctx context.Context, param db.CreateAccountParams) (db.Account, error) {
 	return as.store.CreateAccount(ctx, param)
+}
+
+func (as accountService) GetById(ctx context.Context, id int64) (db.Account, error) {
+	return as.store.GetAccountById(ctx, id)
+}
+
+func (as accountService) GetStockAssetOverview(ctx context.Context, ids []int64) ([]db.GetStockAssetOverviewRow, error) {
+	return as.store.GetStockAssetOverview(ctx, ids)
 }
 
 // ListAllAccount implements sv_interface.IAccountService.
@@ -37,19 +40,9 @@ func (as accountService) ListAllByOwner(ctx context.Context, owner string) ([]db
 	return as.store.ListAllAccount(ctx, owner)
 }
 
-// GetById implements sv_interface.IAccountService.
-func (as accountService) GetById(ctx context.Context, id int64) (db.Account, error) {
-	return as.store.GetAccountById(ctx, id)
-}
-
 // GetAllPaging implements sv_interface.IAccountService.
-func (as accountService) GetAllByOwner(ctx context.Context, owner string) ([]db.GetAccountPagingRow, error) {
-	return as.store.GetAccountPaging(ctx, owner)
-}
-
-// UpdateBalance implements sv_interface.IAccountService.
-func (as accountService) UpdateBalance(ctx context.Context, param db.AddAccountBalanceParams) (db.Account, error) {
-	return as.store.AddAccountBalance(ctx, param)
+func (as accountService) GetAllOverview(ctx context.Context, owner string) ([]db.GetAllAccountOverviewRow, error) {
+	return as.store.GetAllAccountOverview(ctx, owner)
 }
 
 var TxKey = struct{}{}
@@ -74,13 +67,6 @@ func (as accountService) TransferMoney(ctx context.Context, arg dtos.TransferMon
 		}
 		result.Entry = accEntry
 
-		// get account for update
-		// fmt.Println(txName, "get account for update")
-		// account, err := q.GetAccountForUpdate(ctx, arg.AccountID)
-		// if err != nil {
-		// 	return err
-		// }
-
 		//update account balance
 		fmt.Println(txName, "update account balance")
 		result.UpdatedAccount, err = q.AddAccountBalance(ctx, db.AddAccountBalanceParams{
@@ -93,9 +79,4 @@ func (as accountService) TransferMoney(ctx context.Context, arg dtos.TransferMon
 		return nil, nil
 	})
 	return result, err
-}
-
-// Delete implements sv_interface.IAccountService.
-func (as accountService) Delete(ctx context.Context, accountId int64) error {
-	return as.store.DeleteAccount(ctx, accountId)
 }

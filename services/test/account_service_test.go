@@ -12,11 +12,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func createRandomAccount(t *testing.T, user db.User) db.Account {
+func createRandomAccount(t *testing.T, userName string) db.Account {
 	arg := db.CreateAccountParams{
 		ChannelName: util.RandomString(3),
-		Owner:       user.Username,
-		Balance:     50000000,
+		Owner:       userName,
+		Balance:     util.RandomInt(500000000, 1000000000),
 		Currency:    util.RandomCurrency(),
 	}
 	account, err := accService.CreateNew(context.Background(), arg)
@@ -35,20 +35,92 @@ func createRandomAccount(t *testing.T, user db.User) db.Account {
 
 func TestCreateAccount(t *testing.T) {
 	user := createRandomUser(t)
-	createRandomAccount(t, user)
+	createRandomAccount(t, user.Username)
 }
 
 func TestGetById(t *testing.T) {
 	user := createRandomUser(t)
-	acc := createRandomAccount(t, user)
+	acc := createRandomAccount(t, user.Username)
 	getAcc, err := accService.GetById(context.Background(), acc.ID)
 	require.NoError(t, err)
 	require.Equal(t, acc, getAcc)
 }
 
+func TestGetStockAssetOverview(t *testing.T) {
+	//create random account
+	user := createRandomUser(t)
+	acc := createRandomAccount(t, user.Username)
+	// create a  investment
+	ivm := createDefaultInvestmnet(t, acc.ID)
+	// create transactions
+	buyVolume := util.RandomInt(500, 1000)
+	createRandomBuyTransaction(t, acc.ID, ivm.ID, buyVolume)
+	sellVolume := util.RandomInt(100, 500)
+	createRandomSellTransaction(t, acc.ID, ivm.ID, sellVolume)
+
+	// check asset overview
+	ivmDb, err := investmentService.GetById(context.Background(), ivm.ID)
+	require.NoError(t, err)
+	updateAccountBalance := acc.Balance - ivmDb.BuyValue - ivmDb.Fee - ivmDb.Tax + ivmDb.SellValue
+
+	stockAssetOverview, err := accService.GetStockAssetOverview(context.Background(), []int64{acc.ID})
+	require.NoError(t, err)
+	require.Equal(t, acc.ID, stockAssetOverview[0].ID)
+	require.Equal(t, acc.ChannelName, stockAssetOverview[0].ChannelName)
+	require.Equal(t, updateAccountBalance, stockAssetOverview[0].Cash)
+	require.Equal(t, ivmDb.CurrentVolume*ivmDb.CapitalCost, stockAssetOverview[0].TotalCogs)
+	require.Equal(t, ivmDb.CurrentVolume*ivmDb.MarketPrice, stockAssetOverview[0].MarketValue)
+}
+
+func TestListAllByOwner(t *testing.T) {
+	user := createRandomUser(t)
+	n := 5
+	for i := 0; i < n; i++ {
+		createRandomAccount(t, user.Username)
+	}
+	accounts, err := accService.ListAllByOwner(context.Background(), user.Username)
+	require.NoError(t, err)
+	require.Greater(t, len(accounts), 0)
+	require.Equal(t, n, len(accounts))
+}
+
+func TestGetAllOverview(t *testing.T) {
+	//create random accounts
+	user := createRandomUser(t)
+	account := createRandomAccount(t, user.Username)
+	var totalDeposit int64 = 0
+	var totalWithdraw int64 = 0
+	for i := 0; i < 5; i++ {
+		randomAmount := util.RandomInt(-10000000, 10000000)
+
+		result, err := accService.TransferMoney(context.Background(), dtos.TransferMoneyTxParam{
+			AccountID: account.ID,
+			Amount:    randomAmount,
+			EntryType: db.EntryTypeIT,
+		})
+		require.NoError(t, err)
+		require.NotEmpty(t, result)
+		if result.Entry.Amount > 0 {
+			totalDeposit += result.Entry.Amount
+		} else {
+			totalWithdraw += result.Entry.Amount
+		}
+	}
+
+	// get all accounts by owner
+	accountOverviews, err := accService.GetAllOverview(context.Background(), user.Username)
+	require.NoError(t, err)
+	require.Equal(t, account.Balance+totalDeposit+totalWithdraw, accountOverviews[0].Balance)
+	require.Equal(t, account.ChannelName, accountOverviews[0].ChannelName)
+	require.Equal(t, account.ID, accountOverviews[0].ID)
+	require.Equal(t, account.Currency, accountOverviews[0].Currency)
+	require.Equal(t, totalDeposit, accountOverviews[0].Deposit)
+	require.Equal(t, totalWithdraw, accountOverviews[0].Withdraw)
+}
+
 func TestTranserMoneyTx(t *testing.T) {
 	user := createRandomUser(t)
-	account := createRandomAccount(t, user)
+	account := createRandomAccount(t, user.Username)
 	fmt.Println(">> before:", account.Balance)
 	n := 5
 	var amount int64 = 10
@@ -109,58 +181,4 @@ func TestTranserMoneyTx(t *testing.T) {
 		require.NotContains(t, existed, k)
 		existed[k] = true
 	}
-}
-
-func TestListAllAccount(t *testing.T) {
-	accounts, err := accService.ListAllByOwner(context.Background(), "vanson")
-	require.NoError(t, err)
-	require.Greater(t, len(accounts), 0)
-}
-
-func TestGetAccountInfoByIds(t *testing.T) {
-	// create random account
-	user := createRandomUser(t)
-	acc := createRandomAccount(t, user)
-	// create a depositTransfer money depositTransfer
-	depositTransfer, err := accService.TransferMoney(context.Background(), dtos.TransferMoneyTxParam{
-		AccountID: acc.ID,
-		Amount:    util.RandomInt(50, 100),
-		EntryType: db.EntryTypeTM,
-	})
-
-	require.NoError(t, err)
-	require.Equal(t, acc.ID, depositTransfer.Entry.AccountID)
-	require.Equal(t, depositTransfer.Entry.Type, db.EntryTypeTM)
-
-	// create a withdrawal money entry
-	withdrawalTransfer, err := accService.TransferMoney(context.Background(), dtos.TransferMoneyTxParam{
-		AccountID: acc.ID,
-		Amount:    util.RandomInt(-50, 0),
-		EntryType: db.EntryTypeTM,
-	})
-
-	require.NoError(t, err)
-	require.Equal(t, withdrawalTransfer.Entry.AccountID, acc.ID)
-	require.Equal(t, withdrawalTransfer.Entry.Type, db.EntryTypeTM)
-
-	// get account info
-	accInfo, err := accService.GetAccountInfoByIds(context.Background(), []int64{acc.ID})
-	require.NoError(t, err)
-	require.Equal(t, accInfo[0].ID, acc.ID)
-	require.Equal(t, accInfo[0].Cash, withdrawalTransfer.UpdatedAccount.Balance)
-}
-
-func TestGetAllByOwner(t *testing.T) {
-	// create random accounts
-	// accounts, username := createRandomListAccountForUser(t)
-
-	// // get all accounts by owner
-	// allAccounts, err := accService.GetAllByOwner(context.Background(), "vanson")
-	// require.NoError(t, err)
-	// require.Equal(t, len(accounts), len(allAccounts))
-	// for i, acc := range allAccounts {
-	// 	require.Equal(t, acc.ID, accounts[i].ID)
-	// 	require.Equal(t, acc.Owner, accounts[i].Balance)
-
-	// }
 }
