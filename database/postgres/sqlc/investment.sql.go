@@ -153,48 +153,6 @@ func (q *Queries) GetInvestmentByTicker(ctx context.Context, arg GetInvestmentBy
 	return i, err
 }
 
-const getInvestmentsByAccountId = `-- name: GetInvestmentsByAccountId :many
-select id, account_id, ticker, company_name, buy_volume, buy_value, capital_cost, market_price, sell_volume, sell_value, current_volume, description, status, fee, tax, updated_date from investments
-where account_id=$1
-`
-
-func (q *Queries) GetInvestmentsByAccountId(ctx context.Context, accountID int64) ([]Investment, error) {
-	rows, err := q.db.Query(ctx, getInvestmentsByAccountId, accountID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Investment
-	for rows.Next() {
-		var i Investment
-		if err := rows.Scan(
-			&i.ID,
-			&i.AccountID,
-			&i.Ticker,
-			&i.CompanyName,
-			&i.BuyVolume,
-			&i.BuyValue,
-			&i.CapitalCost,
-			&i.MarketPrice,
-			&i.SellVolume,
-			&i.SellValue,
-			&i.CurrentVolume,
-			&i.Description,
-			&i.Status,
-			&i.Fee,
-			&i.Tax,
-			&i.UpdatedDate,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const searchInvestmentPaging = `-- name: SearchInvestmentPaging :many
 SELECT id, account_id, channel_name, ticker, buy_value, buy_volume, capital_cost, current_volume, market_price, sell_value, sell_volume, fee, tax, status, profit FROM investment_overview
 WHERE account_id = ANY($1::bigint[]) AND ticker ILIKE $2::text
@@ -260,22 +218,6 @@ func (q *Queries) SearchInvestmentPaging(ctx context.Context, arg SearchInvestme
 		return nil, err
 	}
 	return items, nil
-}
-
-const updateInvestmentStatus = `-- name: UpdateInvestmentStatus :exec
-update investments
-set status=$2
-WHERE id=$1
-`
-
-type UpdateInvestmentStatusParams struct {
-	ID     int64            `json:"id"`
-	Status InvestmentStatus `json:"status"`
-}
-
-func (q *Queries) UpdateInvestmentStatus(ctx context.Context, arg UpdateInvestmentStatusParams) error {
-	_, err := q.db.Exec(ctx, updateInvestmentStatus, arg.ID, arg.Status)
-	return err
 }
 
 const updateInvestmentWhenBuying = `-- name: UpdateInvestmentWhenBuying :exec

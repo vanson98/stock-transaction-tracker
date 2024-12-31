@@ -29,17 +29,6 @@ WHERE account_id=ANY(@account_ids::bigint[]) AND (ticker ILIKE @search_text::tex
 SELECT * from investments
 where ticker=$1 AND account_id =$2;
 
--- name: GetInvestmentsByAccountId :many
-select * from investments
-where account_id=$1;
-
-
-
--- name: UpdateInvestmentStatus :exec
-update investments
-set status=$2
-WHERE id=$1;
-
 -- name: UpdateInvestmentWhenBuying :exec
 update investments
 set buy_volume = $2,

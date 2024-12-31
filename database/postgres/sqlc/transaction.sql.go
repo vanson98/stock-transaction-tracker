@@ -75,7 +75,7 @@ func (q *Queries) CreateTransaction(ctx context.Context, arg CreateTransactionPa
 	return i, err
 }
 
-const getSumTransactionInfo = `-- name: GetSumTransactionInfo :one
+const getTransactionSummarizeInfo = `-- name: GetTransactionSummarizeInfo :one
 SELECT COUNT(T.id) AS total_rows, SUM( T.match_value) AS sum_match_value , SUM(T.fee) AS sum_fee, SUM(T.tax) AS sum_tax , SUM(T."return") AS sum_return
 FROM investments AS I
 INNER JOIN transactions AS T ON I.id = T.investment_id
@@ -85,12 +85,12 @@ WHERE I.account_id = ANY($1::bigint[]) AND
 LIMIT 1
 `
 
-type GetSumTransactionInfoParams struct {
+type GetTransactionSummarizeInfoParams struct {
 	AccountIds []int64 `json:"account_ids"`
 	Ticker     string  `json:"ticker"`
 }
 
-type GetSumTransactionInfoRow struct {
+type GetTransactionSummarizeInfoRow struct {
 	TotalRows     int64 `json:"total_rows"`
 	SumMatchValue int64 `json:"sum_match_value"`
 	SumFee        int64 `json:"sum_fee"`
@@ -98,44 +98,15 @@ type GetSumTransactionInfoRow struct {
 	SumReturn     int64 `json:"sum_return"`
 }
 
-func (q *Queries) GetSumTransactionInfo(ctx context.Context, arg GetSumTransactionInfoParams) (GetSumTransactionInfoRow, error) {
-	row := q.db.QueryRow(ctx, getSumTransactionInfo, arg.AccountIds, arg.Ticker)
-	var i GetSumTransactionInfoRow
+func (q *Queries) GetTransactionSummarizeInfo(ctx context.Context, arg GetTransactionSummarizeInfoParams) (GetTransactionSummarizeInfoRow, error) {
+	row := q.db.QueryRow(ctx, getTransactionSummarizeInfo, arg.AccountIds, arg.Ticker)
+	var i GetTransactionSummarizeInfoRow
 	err := row.Scan(
 		&i.TotalRows,
 		&i.SumMatchValue,
 		&i.SumFee,
 		&i.SumTax,
 		&i.SumReturn,
-	)
-	return i, err
-}
-
-const getTransactionById = `-- name: GetTransactionById :one
-select id, investment_id, ticker, trading_date, trade, volume, order_price, match_volume, match_price, match_value, fee, tax, cost, cost_of_goods_sold, return, status from transactions
-where id = $1
-`
-
-func (q *Queries) GetTransactionById(ctx context.Context, id int64) (Transaction, error) {
-	row := q.db.QueryRow(ctx, getTransactionById, id)
-	var i Transaction
-	err := row.Scan(
-		&i.ID,
-		&i.InvestmentID,
-		&i.Ticker,
-		&i.TradingDate,
-		&i.Trade,
-		&i.Volume,
-		&i.OrderPrice,
-		&i.MatchVolume,
-		&i.MatchPrice,
-		&i.MatchValue,
-		&i.Fee,
-		&i.Tax,
-		&i.Cost,
-		&i.CostOfGoodsSold,
-		&i.Return,
-		&i.Status,
 	)
 	return i, err
 }

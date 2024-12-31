@@ -45,7 +45,7 @@ func (tc transactionController) GetPaging(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
-	sumInfo, err := tc.transactionService.GetSumTransactionInfo(c, db.GetSumTransactionInfoParams{
+	sumInfo, err := tc.transactionService.GetSummarizeInfo(c, db.GetTransactionSummarizeInfoParams{
 		AccountIds: requestModel.AccountIds,
 		Ticker:     requestModel.Ticker,
 	})

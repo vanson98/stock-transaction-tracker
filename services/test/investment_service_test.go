@@ -82,7 +82,7 @@ func TestSearchInvestment(t *testing.T) {
 
 	investments, err := investmentService.SearchPaging(context.Background(), db.SearchInvestmentPagingParams{
 		AccountIds: []int64{acc.ID},
-		SearchText: "",
+		SearchText: "%" + "%",
 		OrderBy:    "ticker",
 		SortType:   "descending",
 		FromOffset: 0,

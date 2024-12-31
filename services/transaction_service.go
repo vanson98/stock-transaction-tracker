@@ -24,21 +24,6 @@ func InitTransactionService(store db.IStore) sv_interface.ITransactionService {
 	}
 }
 
-// GetPaging implements sv_interface.ITransactionService.
-func (t *transactionService) GetPaging(ctx context.Context, param db.GetTransactionsPagingParams) ([]db.GetTransactionsPagingRow, error) {
-	return t.store.GetTransactionsPaging(ctx, param)
-}
-
-// GetSumTransactionInfo implements sv_interface.ITransactionService.
-func (t *transactionService) GetSumTransactionInfo(ctx context.Context, param db.GetSumTransactionInfoParams) (db.GetSumTransactionInfoRow, error) {
-	return t.store.GetSumTransactionInfo(ctx, param)
-}
-
-// GetById implements sv_interface.ITransactionService.
-func (t *transactionService) GetById(ctx context.Context, id int64) (db.Transaction, error) {
-	return t.store.GetTransactionById(ctx, id)
-}
-
 func (t *transactionService) CreateTransaction(ctx context.Context, arg dtos.CreateTransactionDto) (db.Transaction, error) {
 	if arg.Trade == db.TradeTypeBUY {
 		return t.createBuyingTransaction(ctx, arg)
@@ -48,7 +33,6 @@ func (t *transactionService) CreateTransaction(ctx context.Context, arg dtos.Cre
 	return db.Transaction{}, fmt.Errorf("trading type is not valid")
 }
 
-// InsertTransaction implements sv_interface.ITransactionService.
 func (t *transactionService) InsertTransaction(ctx context.Context, accountId int64, transactions []db.Transaction) (bool, error) {
 	// Get account
 	account, err := t.store.GetAccountById(ctx, accountId)
@@ -227,6 +211,14 @@ func (t *transactionService) InsertTransaction(ctx context.Context, accountId in
 		return false, fmt.Errorf("all transactions are imported in DB but input amount and output amount does not match")
 	}
 	return true, nil
+}
+
+func (t *transactionService) GetPaging(ctx context.Context, param db.GetTransactionsPagingParams) ([]db.GetTransactionsPagingRow, error) {
+	return t.store.GetTransactionsPaging(ctx, param)
+}
+
+func (t *transactionService) GetSummarizeInfo(ctx context.Context, param db.GetTransactionSummarizeInfoParams) (db.GetTransactionSummarizeInfoRow, error) {
+	return t.store.GetTransactionSummarizeInfo(ctx, param)
 }
 
 func (t *transactionService) createBuyingTransaction(ctx context.Context, arg dtos.CreateTransactionDto) (db.Transaction, error) {

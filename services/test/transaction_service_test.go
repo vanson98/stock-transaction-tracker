@@ -12,11 +12,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func createRandomTransaction(t *testing.T, investment *db.Investment, trade db.TradeType, matchVolume int64) db.Transaction {
-
+func createRandomTransaction(t *testing.T, investmentId int64, ticker string, trade db.TradeType, matchVolume int64) db.Transaction {
 	// create transaction params
 	param := dtos.CreateTransactionDto{
-		InvestmentId: investment.ID,
+		InvestmentId: investmentId,
 		TradingDate: pgtype.Timestamp{
 			Time:  time.Now(),
 			Valid: true,
@@ -34,8 +33,8 @@ func createRandomTransaction(t *testing.T, investment *db.Investment, trade db.T
 	transaction, err := tranService.CreateTransaction(context.Background(), param)
 	require.NoError(t, err)
 	require.NotEmpty(t, transaction)
-	require.Equal(t, transaction.InvestmentID, investment.ID)
-	require.Equal(t, transaction.Ticker, investment.Ticker)
+	require.Equal(t, transaction.InvestmentID, investmentId)
+	require.Equal(t, transaction.Ticker, ticker)
 	require.Equal(t, transaction.TradingDate.Time.Truncate(24*time.Hour), param.TradingDate.Time.UTC().Truncate(24*time.Hour))
 	require.Equal(t, transaction.Trade, param.Trade)
 	require.Equal(t, transaction.Volume, param.Volume)
@@ -50,24 +49,28 @@ func createRandomTransaction(t *testing.T, investment *db.Investment, trade db.T
 	return transaction
 }
 
-func TestCreateBuySellTransaction(t *testing.T) {
+func TestCreateCircleTransaction(t *testing.T) {
 	user := createRandomUser(t)
-	acc := createRandomAccount(t, user)
+	acc := createRandomAccount(t, user.Username)
 	investment := createDefaultInvestmnet(t, acc.ID)
 	buyVolume := util.RandomInt(500, 1000)
-	createRandomBuyTransaction(t, &acc, &investment, buyVolume)
+	createRandomBuyTransaction(t, acc.ID, investment.ID, buyVolume)
 	sellVolume := util.RandomInt(100, 500)
-	createRamdomSellTransaction(t, &acc, &investment, sellVolume)
+	createRandomSellTransaction(t, acc.ID, investment.ID, sellVolume)
 }
 
-func createRandomBuyTransaction(t *testing.T, acc *db.Account, investment *db.Investment, matchVolume int64) {
-	transaction := createRandomTransaction(t, investment, db.TradeTypeBUY, matchVolume)
+func createRandomBuyTransaction(t *testing.T, accountId int64, investmentId int64, matchVolume int64) {
+	investment, err := investmentService.GetById(context.Background(), investmentId)
+	require.NoError(t, err)
+	account, err := accService.GetById(context.Background(), accountId)
+	require.NoError(t, err)
+	transaction := createRandomTransaction(t, investment.ID, investment.Ticker, db.TradeTypeBUY, matchVolume)
 
 	// check account's balance
-	accountdb, err := accService.GetById(context.Background(), acc.ID)
-	acc.Balance -= (transaction.MatchValue + transaction.Fee + transaction.Tax)
+	updatedAccount, err := accService.GetById(context.Background(), account.ID)
+	account.Balance -= (transaction.MatchValue + transaction.Fee + transaction.Tax)
 	require.NoError(t, err)
-	require.Equal(t, accountdb.Balance, acc.Balance)
+	require.Equal(t, updatedAccount.Balance, account.Balance)
 
 	// check investment
 	dbInvestment, err := investmentService.GetById(context.Background(), investment.ID)
@@ -97,39 +100,43 @@ func createRandomBuyTransaction(t *testing.T, acc *db.Account, investment *db.In
 
 }
 
-func createRamdomSellTransaction(t *testing.T, acc *db.Account, investment *db.Investment, matchVolume int64) {
-	transaction := createRandomTransaction(t, investment, db.TradeTypeSELL, matchVolume)
+func createRandomSellTransaction(t *testing.T, accountId int64, investmentId int64, matchVolume int64) {
+	investment, err := investmentService.GetById(context.Background(), investmentId)
+	require.NoError(t, err)
+	account, err := accService.GetById(context.Background(), accountId)
+	require.NoError(t, err)
+	transaction := createRandomTransaction(t, investment.ID, investment.Ticker, db.TradeTypeSELL, matchVolume)
 
 	// check account's balance
-	accountdb, err := accService.GetById(context.Background(), acc.ID)
-	acc.Balance += (transaction.MatchValue - transaction.Fee - transaction.Tax)
+	updatedAccount, err := accService.GetById(context.Background(), account.ID)
+	account.Balance += (transaction.MatchValue - transaction.Fee - transaction.Tax)
 	require.NoError(t, err)
-	require.Equal(t, accountdb.Balance, acc.Balance)
+	require.Equal(t, updatedAccount.Balance, account.Balance)
 
 	// check investment
-	dbInvestment, err := investmentService.GetById(context.Background(), investment.ID)
+	updatedInvestment, err := investmentService.GetById(context.Background(), investment.ID)
 	require.NoError(t, err)
-	require.Equal(t, investment.Ticker, dbInvestment.Ticker)
-	require.Equal(t, time.Now().UTC().Truncate(24*time.Hour), dbInvestment.UpdatedDate.Time.Truncate(24*time.Hour))
-	require.Equal(t, transaction.Cost, dbInvestment.CapitalCost)
-	require.Equal(t, transaction.CostOfGoodsSold, dbInvestment.CapitalCost*transaction.MatchVolume)
+	require.Equal(t, investment.Ticker, updatedInvestment.Ticker)
+	require.Equal(t, time.Now().UTC().Truncate(24*time.Hour), updatedInvestment.UpdatedDate.Time.Truncate(24*time.Hour))
+	require.Equal(t, transaction.Cost, updatedInvestment.CapitalCost)
+	require.Equal(t, transaction.CostOfGoodsSold, updatedInvestment.CapitalCost*transaction.MatchVolume)
 
 	investment.SellValue += transaction.MatchValue
 	investment.SellVolume += transaction.MatchVolume
 	investment.CurrentVolume -= transaction.MatchVolume
-	require.Equal(t, investment.SellValue, dbInvestment.SellValue)
-	require.Equal(t, investment.SellVolume, dbInvestment.SellVolume)
-	returnValue := ((transaction.MatchPrice - dbInvestment.CapitalCost) * transaction.MatchVolume) - transaction.Fee - transaction.Tax
+	require.Equal(t, investment.SellValue, updatedInvestment.SellValue)
+	require.Equal(t, investment.SellVolume, updatedInvestment.SellVolume)
+	returnValue := ((transaction.MatchPrice - updatedInvestment.CapitalCost) * transaction.MatchVolume) - transaction.Fee - transaction.Tax
 	require.Equal(t, transaction.Return, returnValue)
 
 	investment.Fee += transaction.Fee
 	investment.Tax += transaction.Tax
-	require.Equal(t, investment.CurrentVolume, dbInvestment.CurrentVolume)
-	require.Equal(t, investment.Fee, dbInvestment.Fee)
-	require.Equal(t, investment.Tax, dbInvestment.Tax)
-	require.Equal(t, time.Now().UTC().Truncate(24*time.Hour), dbInvestment.UpdatedDate.Time.Truncate(24*time.Hour))
+	require.Equal(t, investment.CurrentVolume, updatedInvestment.CurrentVolume)
+	require.Equal(t, investment.Fee, updatedInvestment.Fee)
+	require.Equal(t, investment.Tax, updatedInvestment.Tax)
+	require.Equal(t, time.Now().UTC().Truncate(24*time.Hour), updatedInvestment.UpdatedDate.Time.Truncate(24*time.Hour))
 
-	if dbInvestment.CurrentVolume == 0 {
-		require.Equal(t, db.InvestmentStatusSellout, dbInvestment.Status)
+	if updatedInvestment.CurrentVolume == 0 {
+		require.Equal(t, db.InvestmentStatusSellout, updatedInvestment.Status)
 	}
 }
