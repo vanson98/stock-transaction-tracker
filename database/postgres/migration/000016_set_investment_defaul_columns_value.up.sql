@@ -1,0 +1,14 @@
+ALTER TABLE investments
+ALTER COLUMN buy_value SET DEFAULT 0;
+
+ALTER TABLE investments
+ALTER COLUMN capital_cost SET DEFAULT 0;
+
+ALTER TABLE investments
+ALTER COLUMN market_price SET DEFAULT 0;
+
+ALTER TABLE investments
+ALTER COLUMN fee SET DEFAULT 0;
+
+ALTER TABLE investments
+ALTER COLUMN tax SET DEFAULT 0;

@@ -65,17 +65,6 @@ func (ic *InvestmentController) Create(c *gin.Context) {
 		return
 	}
 
-	// check investment exist
-	// ivm, err := ic.investmentService.GetByTicker(c, createInvestmentModel.Ticker)
-	// if err != nil && err != pgx.ErrNoRows {
-	// 	c.JSON(http.StatusInternalServerError, errorResponse(err))
-	// 	return
-	// } else if ivm.ID > 0 && err == nil {
-	// 	err := fmt.Errorf("investment already exist")
-	// 	c.JSON(http.StatusBadRequest, errorResponse(err))
-	// 	return
-	// }
-
 	investment, err := ic.investmentService.Create(c, db.CreateInvestmentParams{
 		AccountID:   createInvestmentModel.AccountID,
 		Ticker:      createInvestmentModel.Ticker,

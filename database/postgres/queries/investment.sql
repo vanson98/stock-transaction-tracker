@@ -3,6 +3,10 @@ insert into investments(account_id,ticker,company_name,buy_volume,buy_value,capi
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 RETURNING *;
 
+-- name: GetInvestmentById :one
+select * from investments
+where id=$1;
+
 -- name: SearchInvestmentPaging :many
 SELECT * FROM investment_overview
 WHERE account_id = ANY(@account_ids::bigint[]) AND ticker ILIKE @search_text::text
@@ -29,9 +33,7 @@ where ticker=$1 AND account_id =$2;
 select * from investments
 where account_id=$1;
 
--- name: GetInvestmentById :one
-select * from investments
-where id=$1;
+
 
 -- name: UpdateInvestmentStatus :exec
 update investments
