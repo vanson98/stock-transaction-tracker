@@ -46,7 +46,7 @@ func (ac *AccountController) CreateNewAccount(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, account)
 }
 
-func (ac *AccountController) GetAssetCatalog(ctx *gin.Context) {
+func (ac *AccountController) GetAccountOverview(ctx *gin.Context) {
 	var requestData account_model.GetAccountInfoRequest
 	err := ctx.ShouldBindQuery(&requestData)
 	if err != nil {

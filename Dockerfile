@@ -10,7 +10,7 @@ COPY . .
 
 RUN go build -o stk-service-app ./cmd
 
-FROM alpine:latest
+FROM alpine:3.20
 
 WORKDIR /root/
 
