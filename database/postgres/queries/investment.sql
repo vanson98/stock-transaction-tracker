@@ -31,14 +31,14 @@ where ticker=$1 AND account_id =$2;
 
 -- name: UpdateInvestmentWhenBuying :exec
 update investments
-set buy_volume = $2,
-buy_value = $3,
-capital_cost = $4,
-current_volume = $5,
-fee = $6,
-tax = $7,
-updated_date = $8, 
-status=$9
+set buy_volume = buy_value + @buy_transaction_volume,
+buy_value = buy_value + @buy_transaction_value,
+capital_cost = @capital_cost,
+current_volume = current_volume + @buy_transaction_volume,
+fee = fee + @transaction_fee,
+tax = tax + @transaction_tax,
+updated_date = @updated_date, 
+status = @status
 where id = $1;
 
 -- name: UpdateInvestmentWhenSeling :exec
@@ -51,6 +51,5 @@ tax = tax + @transaction_tax,
 status= @status,
 updated_date = sqlc.arg(updated_date)
 WHERE id = $1;
-
 
 

@@ -181,8 +181,8 @@ func (ac *transactionController) ImportTransactions(c *gin.Context) {
 			transactions = append(transactions, transaction)
 		}
 	}
-	result, err := ac.transactionService.InsertTransaction(c, int64(accountId), transactions)
-	if err != nil || !result {
+	result, err := ac.transactionService.ImportTransaction(c, int64(accountId), transactions)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}

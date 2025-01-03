@@ -33,11 +33,11 @@ func (t *transactionService) CreateTransaction(ctx context.Context, arg dtos.Cre
 	return db.Transaction{}, fmt.Errorf("trading type is not valid")
 }
 
-func (t *transactionService) InsertTransaction(ctx context.Context, accountId int64, transactions []db.Transaction) (bool, error) {
+func (t *transactionService) ImportTransaction(ctx context.Context, accountId int64, transactions []db.Transaction) ([]db.Transaction, error) {
 	// Get account
 	account, err := t.store.GetAccountById(ctx, accountId)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 	slices.Reverse(transactions)
 	txResult, err := t.store.ExecTx(ctx, func(q *db.Queries) (interface{}, error) {
@@ -85,132 +85,28 @@ func (t *transactionService) InsertTransaction(ctx context.Context, accountId in
 
 			// update investment and account balance
 			if importTrans.Trade == db.TradeTypeBUY {
-				// check account balance
-				account, err := q.GetAccountById(ctx, investment.AccountID)
-				if err != nil {
-					return nil, err
-				}
-				totalTransactionValue := (importTrans.MatchPrice * importTrans.MatchVolume) + importTrans.Fee + importTrans.Tax
-				if account.Balance < totalTransactionValue {
-					return nil, fmt.Errorf("account balance is less than transation cost")
-				}
-
-				// create entry
-				entry, err := q.CreateEntry(ctx, db.CreateEntryParams{
-					AccountID: investment.AccountID,
-					Amount:    -totalTransactionValue,
-					Type:      db.EntryTypeIT,
-				})
-				if err != nil {
-					return nil, err
-				}
-
-				//add account balance
-				account, err = q.AddAccountBalance(ctx, db.AddAccountBalanceParams{
-					ID:     account.ID,
-					Amount: entry.Amount,
-				})
-				if err != nil {
-					return nil, err
-				}
-				// calculate capital cost for each shares
-				currentInvestmentValue := investment.CurrentVolume * investment.CapitalCost
-				roundUpCapitalCost := math.Round(
-					(float64(currentInvestmentValue) + float64(totalTransactionValue)) /
-						(float64(investment.CurrentVolume) + float64(importTrans.MatchVolume)))
-
-				investment.CapitalCost = int64(roundUpCapitalCost)
-				if int64(math.Abs(float64(investment.CapitalCost-importTrans.Cost))) > 1 {
-					return nil, fmt.Errorf("%s - %s transaction's cost is not match with capital cost in investment", transaction.Ticker, transaction.Trade)
-				}
-				investment.CapitalCost = importTrans.Cost
-
-				// update investment
-				investment.BuyVolume += transaction.MatchVolume
-				investment.BuyValue += transaction.MatchValue
-				investment.Fee += transaction.Fee
-				investment.Tax += transaction.Tax
-				investment.CurrentVolume += transaction.MatchVolume
-
-				err = q.UpdateInvestmentWhenBuying(ctx, db.UpdateInvestmentWhenBuyingParams{
-					ID:            investment.ID,
-					BuyVolume:     investment.BuyVolume,
-					BuyValue:      investment.BuyValue,
-					CapitalCost:   investment.CapitalCost,
-					CurrentVolume: investment.CurrentVolume,
-					Fee:           investment.Fee,
-					Tax:           investment.Tax,
-					Status:        db.InvestmentStatusActive,
-					UpdatedDate: pgtype.Timestamp{
-						Time:  time.Now(),
-						Valid: true,
-					},
-				})
-				if err != nil {
-					return nil, err
-				}
+				err = t.insertBuyingTransaction(ctx, &investment, &transaction, q)
 			} else if transaction.Trade == db.TradeTypeSELL {
-				if investment.CurrentVolume < transaction.MatchVolume {
-					return nil, fmt.Errorf("%s - %s transaction's match volume is lesser than investment volume", transaction.Ticker, transaction.Trade)
-				}
-				// check return
-				returnValue := (transaction.MatchPrice-investment.CapitalCost)*transaction.MatchVolume - transaction.Fee - transaction.Tax
-				if int64(math.Abs(float64(returnValue-transaction.Return))) > 0 {
-					return nil, fmt.Errorf("%s - %s transaction's return value is not match", transaction.Ticker, transaction.Trade)
-				}
-
-				// create account's entry
-				entry, err := q.CreateEntry(ctx, db.CreateEntryParams{
-					AccountID: investment.AccountID,
-					Amount:    transaction.MatchValue - transaction.Fee - transaction.Tax,
-					Type:      db.EntryTypeIT,
-				})
-				if err != nil {
-					return db.Transaction{}, err
-				}
-
-				// update account's balance
-				q.AddAccountBalance(ctx, db.AddAccountBalanceParams{
-					Amount: entry.Amount,
-					ID:     investment.AccountID,
-				})
-
-				// update investment
-				if investment.CurrentVolume-transaction.MatchVolume == 0 {
-					investment.Status = db.InvestmentStatusSellout
-				}
-				err = q.UpdateInvestmentWhenSeling(ctx, db.UpdateInvestmentWhenSelingParams{
-					ID:                    transaction.InvestmentID,
-					SellTransactionVolume: transaction.MatchVolume,
-					SellTransactionValue:  transaction.MatchValue,
-					TransactionFee:        transaction.Fee,
-					TransactionTax:        transaction.Tax,
-					UpdatedDate: pgtype.Timestamp{
-						Time:  time.Now(),
-						Valid: true,
-					},
-					Status: investment.Status,
-				})
-				if err != nil {
-					return nil, err
-				}
+				err = t.insertSellingTransaction(ctx, &investment, &transaction, q)
 			}
-			fmt.Println(transaction)
+			if err != nil {
+				return nil, err
+			}
 			transactionsInserted = append(transactionsInserted, transaction)
 		}
 		return transactionsInserted, nil
 	})
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 	savedTransactions, ok := txResult.([]db.Transaction)
 	if !ok {
-		return false, fmt.Errorf("can't not convert db transaction result")
+		return nil, fmt.Errorf("can't not convert db transaction result")
 	}
 	if len(savedTransactions) != len(transactions) {
-		return false, fmt.Errorf("all transactions are imported in DB but input amount and output amount does not match")
+		return nil, fmt.Errorf("all transactions are imported in DB but input amount and output amount does not match")
 	}
-	return true, nil
+	return transactions, nil
 }
 
 func (t *transactionService) GetPaging(ctx context.Context, param db.GetTransactionsPagingParams) ([]db.GetTransactionsPagingRow, error) {
@@ -290,21 +186,14 @@ func (t *transactionService) createBuyingTransaction(ctx context.Context, arg dt
 		}
 
 		// update investment
-		investment.BuyVolume += transaction.MatchVolume
-		investment.BuyValue += transaction.MatchValue
-		investment.Fee += transaction.Fee
-		investment.Tax += transaction.Tax
-		investment.CurrentVolume += transaction.MatchVolume
-
 		err = t.store.UpdateInvestmentWhenBuying(ctx, db.UpdateInvestmentWhenBuyingParams{
-			ID:            investment.ID,
-			BuyVolume:     investment.BuyVolume,
-			BuyValue:      investment.BuyValue,
-			CapitalCost:   investment.CapitalCost,
-			CurrentVolume: investment.CurrentVolume,
-			Fee:           investment.Fee,
-			Tax:           investment.Tax,
-			Status:        db.InvestmentStatusActive,
+			ID:                   investment.ID,
+			BuyTransactionVolume: transaction.MatchVolume,
+			BuyTransactionValue:  transaction.MatchValue,
+			CapitalCost:          investment.CapitalCost,
+			TransactionFee:       transaction.Fee,
+			TransactionTax:       transaction.Tax,
+			Status:               db.InvestmentStatusActive,
 			UpdatedDate: pgtype.Timestamp{
 				Time:  time.Now(),
 				Valid: true,
@@ -379,7 +268,8 @@ func (t *transactionService) createSellingTransaction(ctx context.Context, arg d
 		if investment.CurrentVolume-transaction.MatchVolume == 0 {
 			investment.Status = db.InvestmentStatusSellout
 		}
-		// update investment
+
+		// update investment when selling
 		err = query.UpdateInvestmentWhenSeling(ctx, db.UpdateInvestmentWhenSelingParams{
 			ID:                    transaction.InvestmentID,
 			SellTransactionVolume: transaction.MatchVolume,
@@ -407,4 +297,112 @@ func (t *transactionService) createSellingTransaction(ctx context.Context, arg d
 		return db.Transaction{}, err
 	}
 	return transaction, err
+}
+
+func (t *transactionService) insertBuyingTransaction(ctx context.Context, investment *db.Investment, insertTransaction *db.Transaction, q *db.Queries) error {
+	// check account balance
+	account, err := q.GetAccountById(ctx, investment.AccountID)
+	if err != nil {
+		return err
+	}
+	totalTransactionValue := (insertTransaction.MatchPrice * insertTransaction.MatchVolume) + insertTransaction.Fee + insertTransaction.Tax
+	if account.Balance < totalTransactionValue {
+		return fmt.Errorf("account balance is less than transation cost")
+	}
+
+	// create entry
+	entry, err := q.CreateEntry(ctx, db.CreateEntryParams{
+		AccountID: investment.AccountID,
+		Amount:    -totalTransactionValue,
+		Type:      db.EntryTypeIT,
+	})
+	if err != nil {
+		return err
+	}
+
+	// add account balance
+	account, err = q.AddAccountBalance(ctx, db.AddAccountBalanceParams{
+		ID:     account.ID,
+		Amount: entry.Amount,
+	})
+	if err != nil {
+		return err
+	}
+	// calculate capital cost for each shares
+	currentInvestmentValue := investment.CurrentVolume * investment.CapitalCost
+	roundUpCapitalCost := math.Round(
+		(float64(currentInvestmentValue) + float64(totalTransactionValue)) /
+			(float64(investment.CurrentVolume) + float64(insertTransaction.MatchVolume)))
+
+	investment.CapitalCost = int64(roundUpCapitalCost)
+	if int64(math.Abs(float64(investment.CapitalCost-insertTransaction.Cost))) > 1 {
+		return fmt.Errorf("%s - %s transaction's cost is not match with capital cost in investment", insertTransaction.Ticker, insertTransaction.Trade)
+	}
+
+	// update investment
+	err = q.UpdateInvestmentWhenBuying(ctx, db.UpdateInvestmentWhenBuyingParams{
+		ID:                   investment.ID,
+		BuyTransactionVolume: insertTransaction.MatchVolume,
+		BuyTransactionValue:  insertTransaction.MatchValue,
+		CapitalCost:          insertTransaction.Cost,
+		TransactionFee:       insertTransaction.Fee,
+		TransactionTax:       insertTransaction.Tax,
+		Status:               db.InvestmentStatusActive,
+		UpdatedDate: pgtype.Timestamp{
+			Time:  time.Now(),
+			Valid: true,
+		},
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (t *transactionService) insertSellingTransaction(ctx context.Context, investment *db.Investment, transaction *db.Transaction, q *db.Queries) error {
+	if investment.CurrentVolume < transaction.MatchVolume {
+		return fmt.Errorf("%s - %s transaction's match volume is lesser than investment volume", transaction.Ticker, transaction.Trade)
+	}
+	// check return
+	returnValue := (transaction.MatchPrice-investment.CapitalCost)*transaction.MatchVolume - transaction.Fee - transaction.Tax
+	if int64(math.Abs(float64(returnValue-transaction.Return))) > 0 {
+		return fmt.Errorf("%s - %s transaction's return value is not match", transaction.Ticker, transaction.Trade)
+	}
+
+	// create account's entry
+	entry, err := q.CreateEntry(ctx, db.CreateEntryParams{
+		AccountID: investment.AccountID,
+		Amount:    transaction.MatchValue - transaction.Fee - transaction.Tax,
+		Type:      db.EntryTypeIT,
+	})
+	if err != nil {
+		return err
+	}
+
+	// update account's balance
+	q.AddAccountBalance(ctx, db.AddAccountBalanceParams{
+		Amount: entry.Amount,
+		ID:     investment.AccountID,
+	})
+
+	// update investment
+	if investment.CurrentVolume-transaction.MatchVolume == 0 {
+		investment.Status = db.InvestmentStatusSellout
+	}
+	err = q.UpdateInvestmentWhenSeling(ctx, db.UpdateInvestmentWhenSelingParams{
+		ID:                    transaction.InvestmentID,
+		SellTransactionVolume: transaction.MatchVolume,
+		SellTransactionValue:  transaction.MatchValue,
+		TransactionFee:        transaction.Fee,
+		TransactionTax:        transaction.Tax,
+		UpdatedDate: pgtype.Timestamp{
+			Time:  time.Now(),
+			Valid: true,
+		},
+		Status: investment.Status,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }

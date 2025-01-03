@@ -2,6 +2,11 @@ package service_test
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"slices"
+	"strconv"
+	"strings"
 	db "stt/database/postgres/sqlc"
 	"stt/services/dtos"
 	"stt/util"
@@ -10,6 +15,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/require"
+	"github.com/xuri/excelize/v2"
 )
 
 func createRandomTransaction(t *testing.T, investmentId int64, ticker string, trade db.TradeType, matchVolume int64) db.Transaction {
@@ -97,7 +103,6 @@ func createRandomBuyTransaction(t *testing.T, accountId int64, investmentId int6
 	if dbInvestment.CurrentVolume > 0 {
 		require.Equal(t, db.InvestmentStatusActive, dbInvestment.Status)
 	}
-
 }
 
 func createRandomSellTransaction(t *testing.T, accountId int64, investmentId int64, matchVolume int64) {
@@ -139,4 +144,146 @@ func createRandomSellTransaction(t *testing.T, accountId int64, investmentId int
 	if updatedInvestment.CurrentVolume == 0 {
 		require.Equal(t, db.InvestmentStatusSellout, updatedInvestment.Status)
 	}
+}
+
+func TestImportTransaction(t *testing.T) {
+	user := createRandomUser(t)
+	account := createRandomAccount(t, user.Username)
+	account2 := createRandomAccount(t, user.Username)
+	account3 := createRandomAccount(t, user.Username)
+	_, err := accService.TransferMoney(context.Background(), dtos.TransferMoneyTxParam{
+		AccountID: account2.ID,
+		Amount:    -account2.Balance,
+		EntryType: "IT",
+	})
+	require.NoError(t, err)
+
+	transactions, err := readTransactionFileData()
+	require.NoError(t, err)
+	require.NotEmpty(t, transactions)
+
+	test_prams := []struct {
+		name         string
+		accountId    int64
+		transactions []db.Transaction
+	}{
+		{"positive case", account.ID, transactions},
+		{"account balance not enough", account2.ID, transactions},
+		{"buy transaction cost not match", account.ID, transactions[len(transactions)-1:]},
+		{"investment volume is lesser than transaction sell volume", account.ID, transactions[len(transactions)-2 : len(transactions)-1]},
+		{"sell transaction return not match", account3.ID, transactions},
+	}
+
+	for _, tc := range test_prams {
+		t.Run(tc.name, func(t *testing.T) {
+			switch tc.name {
+			case "positive case":
+				importedTransactions, err := tranService.ImportTransaction(context.Background(), tc.accountId, tc.transactions)
+				require.NoError(t, err)
+				require.NotNil(t, importedTransactions)
+				for i, importedTrans := range importedTransactions {
+					transacion := tc.transactions[i]
+					require.Equal(t, transacion.Ticker, importedTrans.Ticker)
+					require.Equal(t, transacion.TradingDate.Time.UTC(), importedTrans.TradingDate.Time)
+					require.Equal(t, transacion.Trade, importedTrans.Trade)
+					require.Equal(t, transacion.Volume, importedTrans.Volume)
+					require.Equal(t, transacion.OrderPrice, importedTrans.OrderPrice)
+					require.Equal(t, transacion.MatchVolume, importedTrans.MatchVolume)
+					require.Equal(t, transacion.MatchPrice, importedTrans.MatchPrice)
+					require.Equal(t, transacion.MatchValue, importedTrans.MatchValue)
+					require.Equal(t, transacion.Fee, importedTrans.Fee)
+					require.Equal(t, transacion.Tax, importedTrans.Tax)
+					require.Equal(t, transacion.Cost, importedTrans.Cost)
+					require.Equal(t, transacion.Return, importedTrans.Return)
+					require.Equal(t, transacion.Status, importedTrans.Status)
+				}
+				slices.Reverse(tc.transactions)
+			case "account balance not enough":
+				_, err := tranService.ImportTransaction(context.Background(), tc.accountId, tc.transactions)
+				require.Error(t, err)
+				require.EqualError(t, err, "account balance is less than transation cost")
+				slices.Reverse(tc.transactions)
+			case "buy transaction cost not match":
+				originTxCost := tc.transactions[0].Cost
+				tc.transactions[0].Cost = 0
+				_, err := tranService.ImportTransaction(context.Background(), tc.accountId, tc.transactions)
+				require.EqualError(t, err, fmt.Sprintf("%s - %s transaction's cost is not match with capital cost in investment", tc.transactions[0].Ticker, tc.transactions[0].Trade))
+				tc.transactions[0].Cost = originTxCost
+			case "investment volume is lesser than transaction sell volume":
+				_, err := tranService.ImportTransaction(context.Background(), tc.accountId, tc.transactions)
+				require.EqualError(t, err, fmt.Sprintf("%s - %s transaction's match volume is lesser than investment volume", tc.transactions[0].Ticker, tc.transactions[0].Trade))
+			case "sell transaction return not match":
+				var manipulatedTransaction = tc.transactions[len(transactions)-2]
+				tc.transactions[len(transactions)-2].Return = -1
+				_, err := tranService.ImportTransaction(context.Background(), tc.accountId, tc.transactions)
+				require.EqualError(t, err, fmt.Sprintf("%s - %s transaction's return value is not match", manipulatedTransaction.Ticker, manipulatedTransaction.Trade))
+			}
+
+		})
+	}
+}
+
+func readTransactionFileData() ([]db.Transaction, error) {
+	excelFile, err := os.Open("./data/105CA35050.xlsx")
+	if err != nil {
+		return nil, err
+	}
+	f, err := excelize.OpenReader(excelFile)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		f.Close()
+	}()
+	rows, err := f.GetRows("Sheet 1")
+	if err != nil {
+		return nil, err
+	}
+	transactions := []db.Transaction{}
+	for i, row := range rows {
+		if i > 14 {
+			if row == nil {
+				break
+			}
+			tradingDate, err := time.Parse("02/01/2006", row[1])
+			if err != nil {
+				continue
+			}
+			var trade db.TradeType
+			if row[2] == "Mua" {
+				trade = db.TradeTypeBUY
+			} else {
+				trade = db.TradeTypeSELL
+			}
+			volume, _ := strconv.Atoi(row[3])
+			orderPrice, _ := strconv.Atoi(strings.Replace(row[4], ",", "", -1))
+			matchVolume, _ := strconv.Atoi(row[5])
+			matchPrice, _ := strconv.Atoi(strings.Replace(row[6], ",", "", -1))
+			matchValue, _ := strconv.Atoi(strings.Replace(row[7], ",", "", -1))
+			fee, _ := strconv.Atoi(strings.Replace(row[8], ",", "", -1))
+			tax, _ := strconv.Atoi(strings.Replace(row[9], ",", "", -1))
+			cost, _ := strconv.Atoi(strings.Replace(row[10], ",", "", -1))
+			returnValue, _ := strconv.Atoi(strings.Replace(row[11], ",", "", -1))
+			transaction := db.Transaction{
+				Ticker: row[0],
+				TradingDate: pgtype.Timestamp{
+					Time:  tradingDate,
+					Valid: true,
+				},
+				Trade:       trade,
+				Volume:      int64(volume),
+				OrderPrice:  int64(orderPrice),
+				MatchVolume: int64(matchVolume),
+				MatchPrice:  int64(matchPrice),
+				MatchValue:  int64(matchValue),
+				Fee:         int64(fee),
+				Tax:         int64(tax),
+				Cost:        int64(cost),
+				Return:      int64(returnValue),
+				Status:      db.TransactionStatusCOMPLETED,
+			}
+			transactions = append(transactions, transaction)
+		}
+	}
+	return transactions, nil
 }

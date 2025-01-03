@@ -222,38 +222,36 @@ func (q *Queries) SearchInvestmentPaging(ctx context.Context, arg SearchInvestme
 
 const updateInvestmentWhenBuying = `-- name: UpdateInvestmentWhenBuying :exec
 update investments
-set buy_volume = $2,
-buy_value = $3,
+set buy_volume = buy_value + $2,
+buy_value = buy_value + $3,
 capital_cost = $4,
-current_volume = $5,
-fee = $6,
-tax = $7,
-updated_date = $8, 
-status=$9
+current_volume = current_volume + $2,
+fee = fee + $5,
+tax = tax + $6,
+updated_date = $7, 
+status = $8
 where id = $1
 `
 
 type UpdateInvestmentWhenBuyingParams struct {
-	ID            int64            `json:"id"`
-	BuyVolume     int64            `json:"buy_volume"`
-	BuyValue      int64            `json:"buy_value"`
-	CapitalCost   int64            `json:"capital_cost"`
-	CurrentVolume int64            `json:"current_volume"`
-	Fee           int64            `json:"fee"`
-	Tax           int64            `json:"tax"`
-	UpdatedDate   pgtype.Timestamp `json:"updated_date"`
-	Status        InvestmentStatus `json:"status"`
+	ID                   int64            `json:"id"`
+	BuyTransactionVolume int64            `json:"buy_transaction_volume"`
+	BuyTransactionValue  int64            `json:"buy_transaction_value"`
+	CapitalCost          int64            `json:"capital_cost"`
+	TransactionFee       int64            `json:"transaction_fee"`
+	TransactionTax       int64            `json:"transaction_tax"`
+	UpdatedDate          pgtype.Timestamp `json:"updated_date"`
+	Status               InvestmentStatus `json:"status"`
 }
 
 func (q *Queries) UpdateInvestmentWhenBuying(ctx context.Context, arg UpdateInvestmentWhenBuyingParams) error {
 	_, err := q.db.Exec(ctx, updateInvestmentWhenBuying,
 		arg.ID,
-		arg.BuyVolume,
-		arg.BuyValue,
+		arg.BuyTransactionVolume,
+		arg.BuyTransactionValue,
 		arg.CapitalCost,
-		arg.CurrentVolume,
-		arg.Fee,
-		arg.Tax,
+		arg.TransactionFee,
+		arg.TransactionTax,
 		arg.UpdatedDate,
 		arg.Status,
 	)
