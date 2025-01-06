@@ -21,7 +21,11 @@ ORDER BY
 OFFSET @from_offset::int LIMIT @to_limit::int;
 
 -- name: GetTransactionSummarizeInfo :one
-SELECT COUNT(T.id) AS total_rows, SUM( T.match_value) AS sum_match_value , SUM(T.fee) AS sum_fee, SUM(T.tax) AS sum_tax , SUM(T."return") AS sum_return
+SELECT COUNT(T.id)::INT AS total_rows,
+COALESCE(SUM( T.match_value), 0)::BIGINT AS sum_match_value, 
+COALESCE(SUM(T.fee), 0)::BIGINT AS sum_fee, 
+COALESCE(SUM(T.tax), 0)::BIGINT AS sum_tax, 
+COALESCE(SUM(T."return"), 0)::BIGINT AS sum_return
 FROM investments AS I
 INNER JOIN transactions AS T ON I.id = T.investment_id
 WHERE I.account_id = ANY(@account_ids::bigint[]) AND

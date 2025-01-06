@@ -50,7 +50,7 @@ stt/services/transaction_service.go:106.2,106.49 1 1
 stt/services/transaction_service.go:106.49,108.3 1 0
 stt/services/transaction_service.go:109.2,109.26 1 1
 stt/services/transaction_service.go:112.138,114.2 1 0
-stt/services/transaction_service.go:116.155,118.2 1 0
+stt/services/transaction_service.go:116.155,118.2 1 1
 stt/services/transaction_service.go:120.130,121.78 1 1
 stt/services/transaction_service.go:121.78,124.17 2 1
 stt/services/transaction_service.go:124.17,125.28 1 0

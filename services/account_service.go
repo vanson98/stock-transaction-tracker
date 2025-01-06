@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"fmt"
 	db "stt/database/postgres/sqlc"
 
 	"stt/services/dtos"
@@ -53,10 +52,10 @@ func (as accountService) TransferMoney(ctx context.Context, arg dtos.TransferMon
 
 	_, err := as.store.ExecTx(ctx, func(q *db.Queries) (interface{}, error) {
 		var err error
-		txName := ctx.Value(TxKey)
+		//txName := ctx.Value(TxKey)
 
 		// create a entry
-		fmt.Println(txName, "create a entry")
+		//fmt.Println(txName, "create a entry")
 		accEntry, err := q.CreateEntry(ctx, db.CreateEntryParams{
 			AccountID: arg.AccountID,
 			Type:      arg.EntryType,
@@ -68,7 +67,7 @@ func (as accountService) TransferMoney(ctx context.Context, arg dtos.TransferMon
 		result.Entry = accEntry
 
 		//update account balance
-		fmt.Println(txName, "update account balance")
+		//fmt.Println(txName, "update account balance")
 		result.UpdatedAccount, err = q.AddAccountBalance(ctx, db.AddAccountBalanceParams{
 			ID:     arg.AccountID,
 			Amount: arg.Amount,

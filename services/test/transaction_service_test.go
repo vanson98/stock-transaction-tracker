@@ -182,6 +182,7 @@ func TestImportTransaction(t *testing.T) {
 				require.NoError(t, err)
 				require.NotNil(t, importedTransactions)
 				for i, importedTrans := range importedTransactions {
+
 					transacion := tc.transactions[i]
 					require.Equal(t, transacion.Ticker, importedTrans.Ticker)
 					require.Equal(t, transacion.TradingDate.Time.UTC(), importedTrans.TradingDate.Time)
@@ -286,4 +287,49 @@ func readTransactionFileData() ([]db.Transaction, error) {
 		}
 	}
 	return transactions, nil
+}
+
+func TestGetSumarizeTransactionInfo(t *testing.T) {
+	user := createRandomUser(t)
+	acc := createRandomAccount(t, user.Username)
+
+	transactions, err := readTransactionFileData()
+	require.NoError(t, err)
+	require.NotEmpty(t, transactions)
+
+	result, err := tranService.GetSummarizeInfo(context.Background(), db.GetTransactionSummarizeInfoParams{
+		AccountIds: []int64{acc.ID},
+		Ticker:     transactions[0].Ticker,
+	})
+	require.NoError(t, err)
+	require.GreaterOrEqual(t, result.TotalRows, int32(0))
+	require.GreaterOrEqual(t, result.SumFee, int64(0))
+	require.GreaterOrEqual(t, result.SumMatchValue, int64(0))
+	require.GreaterOrEqual(t, result.SumReturn, int64(0))
+	require.GreaterOrEqual(t, result.SumTax, int64(0))
+
+	importedTransactions, err := tranService.ImportTransaction(context.Background(), acc.ID, transactions)
+	require.NoError(t, err)
+	require.NotEmpty(t, importedTransactions)
+
+	result, err = tranService.GetSummarizeInfo(context.Background(), db.GetTransactionSummarizeInfoParams{
+		AccountIds: []int64{acc.ID},
+		Ticker:     "",
+	})
+
+	var sumFee int64
+	var sumMatchValue int64
+	var sumReturn int64
+	var sumTax int64
+	for _, tx := range importedTransactions {
+		sumFee += tx.Fee
+		sumMatchValue += tx.MatchValue
+		sumTax += tx.Tax
+		sumReturn += tx.Return
+	}
+	require.Equal(t, int32(len(importedTransactions)), result.TotalRows)
+	require.Equal(t, sumFee, result.SumFee)
+	require.Equal(t, sumMatchValue, result.SumMatchValue)
+	require.Equal(t, sumTax, result.SumTax)
+	require.Equal(t, sumReturn, result.SumReturn)
 }

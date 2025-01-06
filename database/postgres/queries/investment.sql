@@ -9,7 +9,9 @@ where id=$1;
 
 -- name: SearchInvestmentPaging :many
 SELECT * FROM investment_overview
-WHERE account_id = ANY(@account_ids::bigint[]) AND ticker ILIKE @search_text::text
+WHERE account_id = ANY(@account_ids::bigint[]) 
+    AND ticker ILIKE 
+        CASE WHEN @search_text::text = '' THEN '%%' ELSE '%' || @search_text::text || '%' END
 ORDER BY 
     CASE WHEN @order_by::text = 'ticker' AND @sort_type::text = 'ascending' THEN ticker END ASC,
     CASE WHEN @order_by::text = 'ticker' AND @sort_type::text = 'descending' THEN ticker END DESC,
@@ -29,9 +31,9 @@ WHERE account_id=ANY(@account_ids::bigint[]) AND (ticker ILIKE @search_text::tex
 SELECT * from investments
 where ticker=$1 AND account_id =$2;
 
--- name: UpdateInvestmentWhenBuying :exec
+-- name: UpdateInvestmentWhenBuying :one
 update investments
-set buy_volume = buy_value + @buy_transaction_volume,
+set buy_volume = buy_volume + @buy_transaction_volume,
 buy_value = buy_value + @buy_transaction_value,
 capital_cost = @capital_cost,
 current_volume = current_volume + @buy_transaction_volume,
@@ -39,9 +41,10 @@ fee = fee + @transaction_fee,
 tax = tax + @transaction_tax,
 updated_date = @updated_date, 
 status = @status
-where id = $1;
+where id = $1
+RETURNING *;
 
--- name: UpdateInvestmentWhenSeling :exec
+-- name: UpdateInvestmentWhenSeling :one
 UPDATE investments
 SET sell_volume = sell_volume + @sell_transaction_volume,
 sell_value = sell_value + @sell_transaction_value,
@@ -50,6 +53,7 @@ fee = fee + @transaction_fee,
 tax = tax + @transaction_tax, 
 status= @status,
 updated_date = sqlc.arg(updated_date)
-WHERE id = $1;
+WHERE id = $1
+RETURNING *;
 
 

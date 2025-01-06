@@ -155,7 +155,9 @@ func (q *Queries) GetInvestmentByTicker(ctx context.Context, arg GetInvestmentBy
 
 const searchInvestmentPaging = `-- name: SearchInvestmentPaging :many
 SELECT id, account_id, channel_name, ticker, buy_value, buy_volume, capital_cost, current_volume, market_price, sell_value, sell_volume, fee, tax, status, profit FROM investment_overview
-WHERE account_id = ANY($1::bigint[]) AND ticker ILIKE $2::text
+WHERE account_id = ANY($1::bigint[]) 
+    AND ticker ILIKE 
+        CASE WHEN $2::text = '' THEN '%%' ELSE '%' || $2::text || '%' END
 ORDER BY 
     CASE WHEN $3::text = 'ticker' AND $4::text = 'ascending' THEN ticker END ASC,
     CASE WHEN $3::text = 'ticker' AND $4::text = 'descending' THEN ticker END DESC,
@@ -220,9 +222,9 @@ func (q *Queries) SearchInvestmentPaging(ctx context.Context, arg SearchInvestme
 	return items, nil
 }
 
-const updateInvestmentWhenBuying = `-- name: UpdateInvestmentWhenBuying :exec
+const updateInvestmentWhenBuying = `-- name: UpdateInvestmentWhenBuying :one
 update investments
-set buy_volume = buy_value + $2,
+set buy_volume = buy_volume + $2,
 buy_value = buy_value + $3,
 capital_cost = $4,
 current_volume = current_volume + $2,
@@ -231,6 +233,7 @@ tax = tax + $6,
 updated_date = $7, 
 status = $8
 where id = $1
+RETURNING id, account_id, ticker, company_name, buy_volume, buy_value, capital_cost, market_price, sell_volume, sell_value, current_volume, description, status, fee, tax, updated_date
 `
 
 type UpdateInvestmentWhenBuyingParams struct {
@@ -244,8 +247,8 @@ type UpdateInvestmentWhenBuyingParams struct {
 	Status               InvestmentStatus `json:"status"`
 }
 
-func (q *Queries) UpdateInvestmentWhenBuying(ctx context.Context, arg UpdateInvestmentWhenBuyingParams) error {
-	_, err := q.db.Exec(ctx, updateInvestmentWhenBuying,
+func (q *Queries) UpdateInvestmentWhenBuying(ctx context.Context, arg UpdateInvestmentWhenBuyingParams) (Investment, error) {
+	row := q.db.QueryRow(ctx, updateInvestmentWhenBuying,
 		arg.ID,
 		arg.BuyTransactionVolume,
 		arg.BuyTransactionValue,
@@ -255,10 +258,29 @@ func (q *Queries) UpdateInvestmentWhenBuying(ctx context.Context, arg UpdateInve
 		arg.UpdatedDate,
 		arg.Status,
 	)
-	return err
+	var i Investment
+	err := row.Scan(
+		&i.ID,
+		&i.AccountID,
+		&i.Ticker,
+		&i.CompanyName,
+		&i.BuyVolume,
+		&i.BuyValue,
+		&i.CapitalCost,
+		&i.MarketPrice,
+		&i.SellVolume,
+		&i.SellValue,
+		&i.CurrentVolume,
+		&i.Description,
+		&i.Status,
+		&i.Fee,
+		&i.Tax,
+		&i.UpdatedDate,
+	)
+	return i, err
 }
 
-const updateInvestmentWhenSeling = `-- name: UpdateInvestmentWhenSeling :exec
+const updateInvestmentWhenSeling = `-- name: UpdateInvestmentWhenSeling :one
 UPDATE investments
 SET sell_volume = sell_volume + $2,
 sell_value = sell_value + $3,
@@ -268,6 +290,7 @@ tax = tax + $5,
 status= $6,
 updated_date = $7
 WHERE id = $1
+RETURNING id, account_id, ticker, company_name, buy_volume, buy_value, capital_cost, market_price, sell_volume, sell_value, current_volume, description, status, fee, tax, updated_date
 `
 
 type UpdateInvestmentWhenSelingParams struct {
@@ -280,8 +303,8 @@ type UpdateInvestmentWhenSelingParams struct {
 	UpdatedDate           pgtype.Timestamp `json:"updated_date"`
 }
 
-func (q *Queries) UpdateInvestmentWhenSeling(ctx context.Context, arg UpdateInvestmentWhenSelingParams) error {
-	_, err := q.db.Exec(ctx, updateInvestmentWhenSeling,
+func (q *Queries) UpdateInvestmentWhenSeling(ctx context.Context, arg UpdateInvestmentWhenSelingParams) (Investment, error) {
+	row := q.db.QueryRow(ctx, updateInvestmentWhenSeling,
 		arg.ID,
 		arg.SellTransactionVolume,
 		arg.SellTransactionValue,
@@ -290,5 +313,24 @@ func (q *Queries) UpdateInvestmentWhenSeling(ctx context.Context, arg UpdateInve
 		arg.Status,
 		arg.UpdatedDate,
 	)
-	return err
+	var i Investment
+	err := row.Scan(
+		&i.ID,
+		&i.AccountID,
+		&i.Ticker,
+		&i.CompanyName,
+		&i.BuyVolume,
+		&i.BuyValue,
+		&i.CapitalCost,
+		&i.MarketPrice,
+		&i.SellVolume,
+		&i.SellValue,
+		&i.CurrentVolume,
+		&i.Description,
+		&i.Status,
+		&i.Fee,
+		&i.Tax,
+		&i.UpdatedDate,
+	)
+	return i, err
 }

@@ -3,6 +3,7 @@ package service_test
 import (
 	"context"
 	"fmt"
+	"strings"
 	db "stt/database/postgres/sqlc"
 	"stt/services"
 	"stt/services/dtos"
@@ -14,7 +15,7 @@ import (
 
 func createRandomAccount(t *testing.T, userName string) db.Account {
 	arg := db.CreateAccountParams{
-		ChannelName: util.RandomString(3),
+		ChannelName: strings.ToUpper(util.RandomString(3)),
 		Owner:       userName,
 		Balance:     util.RandomInt(500000000, 1000000000),
 		Currency:    util.RandomCurrency(),

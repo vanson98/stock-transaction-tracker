@@ -186,7 +186,7 @@ func (t *transactionService) createBuyingTransaction(ctx context.Context, arg dt
 		}
 
 		// update investment
-		err = t.store.UpdateInvestmentWhenBuying(ctx, db.UpdateInvestmentWhenBuyingParams{
+		_, err = t.store.UpdateInvestmentWhenBuying(ctx, db.UpdateInvestmentWhenBuyingParams{
 			ID:                   investment.ID,
 			BuyTransactionVolume: transaction.MatchVolume,
 			BuyTransactionValue:  transaction.MatchValue,
@@ -270,7 +270,7 @@ func (t *transactionService) createSellingTransaction(ctx context.Context, arg d
 		}
 
 		// update investment when selling
-		err = query.UpdateInvestmentWhenSeling(ctx, db.UpdateInvestmentWhenSelingParams{
+		_, err = query.UpdateInvestmentWhenSeling(ctx, db.UpdateInvestmentWhenSelingParams{
 			ID:                    transaction.InvestmentID,
 			SellTransactionVolume: transaction.MatchVolume,
 			SellTransactionValue:  transaction.MatchValue,
@@ -340,7 +340,7 @@ func (t *transactionService) insertBuyingTransaction(ctx context.Context, invest
 	}
 
 	// update investment
-	err = q.UpdateInvestmentWhenBuying(ctx, db.UpdateInvestmentWhenBuyingParams{
+	updatedInvestment, err := q.UpdateInvestmentWhenBuying(ctx, db.UpdateInvestmentWhenBuyingParams{
 		ID:                   investment.ID,
 		BuyTransactionVolume: insertTransaction.MatchVolume,
 		BuyTransactionValue:  insertTransaction.MatchValue,
@@ -355,6 +355,13 @@ func (t *transactionService) insertBuyingTransaction(ctx context.Context, invest
 	})
 	if err != nil {
 		return err
+	}
+	if updatedInvestment.BuyVolume-investment.BuyVolume != insertTransaction.MatchVolume ||
+		updatedInvestment.BuyValue-investment.BuyValue != insertTransaction.MatchValue ||
+		updatedInvestment.CapitalCost != insertTransaction.Cost ||
+		updatedInvestment.Fee-investment.Fee != insertTransaction.Fee ||
+		updatedInvestment.Tax-investment.Tax != insertTransaction.Tax {
+		return fmt.Errorf("updated buy %s investment have incorrect datas", updatedInvestment.Ticker)
 	}
 	return nil
 }
@@ -389,7 +396,7 @@ func (t *transactionService) insertSellingTransaction(ctx context.Context, inves
 	if investment.CurrentVolume-transaction.MatchVolume == 0 {
 		investment.Status = db.InvestmentStatusSellout
 	}
-	err = q.UpdateInvestmentWhenSeling(ctx, db.UpdateInvestmentWhenSelingParams{
+	updatedInvestment, err := q.UpdateInvestmentWhenSeling(ctx, db.UpdateInvestmentWhenSelingParams{
 		ID:                    transaction.InvestmentID,
 		SellTransactionVolume: transaction.MatchVolume,
 		SellTransactionValue:  transaction.MatchValue,
@@ -403,6 +410,13 @@ func (t *transactionService) insertSellingTransaction(ctx context.Context, inves
 	})
 	if err != nil {
 		return err
+	}
+	if updatedInvestment.SellVolume-investment.SellVolume != transaction.MatchVolume ||
+		updatedInvestment.SellValue-investment.SellValue != transaction.MatchValue ||
+		updatedInvestment.Fee-investment.Fee != transaction.Fee ||
+		updatedInvestment.Tax-investment.Tax != transaction.Tax ||
+		updatedInvestment.UpdatedDate.Time.Truncate(24*time.Hour) != time.Now().UTC().Truncate(24*time.Hour) {
+		return fmt.Errorf("updated sell %s investment have incorrect datas", updatedInvestment.Ticker)
 	}
 	return nil
 }

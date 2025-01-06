@@ -28,8 +28,8 @@ type Querier interface {
 	GetUser(ctx context.Context, username string) (User, error)
 	ListAllAccount(ctx context.Context, owner string) ([]ListAllAccountRow, error)
 	SearchInvestmentPaging(ctx context.Context, arg SearchInvestmentPagingParams) ([]InvestmentOverview, error)
-	UpdateInvestmentWhenBuying(ctx context.Context, arg UpdateInvestmentWhenBuyingParams) error
-	UpdateInvestmentWhenSeling(ctx context.Context, arg UpdateInvestmentWhenSelingParams) error
+	UpdateInvestmentWhenBuying(ctx context.Context, arg UpdateInvestmentWhenBuyingParams) (Investment, error)
+	UpdateInvestmentWhenSeling(ctx context.Context, arg UpdateInvestmentWhenSelingParams) (Investment, error)
 }
 
 var _ Querier = (*Queries)(nil)

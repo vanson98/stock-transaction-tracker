@@ -31,7 +31,7 @@ func (ic *InvestmentController) Search(c *gin.Context) {
 	}
 	var searchPram = db.SearchInvestmentPagingParams{
 		AccountIds: requestModel.AccountIds,
-		SearchText: "%" + requestModel.SearchText + "%",
+		SearchText: requestModel.SearchText,
 		OrderBy:    requestModel.OrderBy,
 		SortType:   requestModel.SortType,
 		TakeLimit:  int32(requestModel.PageSize),
