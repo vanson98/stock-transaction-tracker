@@ -37,3 +37,8 @@ func (ivs investmentService) Count(c context.Context, param db.CountInvestmentPa
 func (ivs investmentService) SearchPaging(c context.Context, param db.SearchInvestmentPagingParams) ([]db.InvestmentOverview, error) {
 	return ivs.store.SearchInvestmentPaging(c, param)
 }
+
+// UpdateMarketPrice implements sv_interface.IInvestmentService.
+func (ivs investmentService) UpdateMarketPrice(c context.Context, params db.UpdateMarketPriceParams) (db.UpdateMarketPriceRow, error) {
+	return ivs.store.UpdateMarketPrice(c, params)
+}

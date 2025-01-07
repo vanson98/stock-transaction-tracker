@@ -334,3 +334,27 @@ func (q *Queries) UpdateInvestmentWhenSeling(ctx context.Context, arg UpdateInve
 	)
 	return i, err
 }
+
+const updateMarketPrice = `-- name: UpdateMarketPrice :one
+UPDATE investments 
+SET market_price = $2
+WHERE id = $1
+RETURNING id,market_price
+`
+
+type UpdateMarketPriceParams struct {
+	ID          int64 `json:"id"`
+	MarketPrice int64 `json:"market_price"`
+}
+
+type UpdateMarketPriceRow struct {
+	ID          int64 `json:"id"`
+	MarketPrice int64 `json:"market_price"`
+}
+
+func (q *Queries) UpdateMarketPrice(ctx context.Context, arg UpdateMarketPriceParams) (UpdateMarketPriceRow, error) {
+	row := q.db.QueryRow(ctx, updateMarketPrice, arg.ID, arg.MarketPrice)
+	var i UpdateMarketPriceRow
+	err := row.Scan(&i.ID, &i.MarketPrice)
+	return i, err
+}

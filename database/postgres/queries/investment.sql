@@ -56,4 +56,10 @@ updated_date = sqlc.arg(updated_date)
 WHERE id = $1
 RETURNING *;
 
+-- name: UpdateMarketPrice :one
+UPDATE investments 
+SET market_price = $2
+WHERE id = $1
+RETURNING id,market_price;
+
 

@@ -30,6 +30,7 @@ type Querier interface {
 	SearchInvestmentPaging(ctx context.Context, arg SearchInvestmentPagingParams) ([]InvestmentOverview, error)
 	UpdateInvestmentWhenBuying(ctx context.Context, arg UpdateInvestmentWhenBuyingParams) (Investment, error)
 	UpdateInvestmentWhenSeling(ctx context.Context, arg UpdateInvestmentWhenSelingParams) (Investment, error)
+	UpdateMarketPrice(ctx context.Context, arg UpdateMarketPriceParams) (UpdateMarketPriceRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

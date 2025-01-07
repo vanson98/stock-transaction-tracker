@@ -92,3 +92,18 @@ func TestSearchInvestment(t *testing.T) {
 	require.NotEmpty(t, investments)
 	require.Len(t, investments, n)
 }
+
+func TestUpdateMarketPrice(t *testing.T) {
+	user := createRandomUser(t)
+	acc := createRandomAccount(t, user.Username)
+	ivm := createDefaultInvestmnet(t, acc.ID)
+	updateMarketPrice := util.RandomInt(1000, 100000)
+	result, err := investmentService.UpdateMarketPrice(context.Background(), db.UpdateMarketPriceParams{
+		ID:          ivm.ID,
+		MarketPrice: updateMarketPrice,
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, result)
+	require.Equal(t, updateMarketPrice, result.MarketPrice)
+	require.Equal(t, ivm.ID, result.ID)
+}
