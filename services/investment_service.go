@@ -25,8 +25,13 @@ func (ivs investmentService) Create(c context.Context, param db.CreateInvestment
 	return ivs.store.CreateInvestment(ctx, param)
 }
 
-func (i investmentService) GetById(c context.Context, id int64) (db.Investment, error) {
-	return i.store.GetInvestmentById(c, id)
+// GetById implements sv_interface.IInvestmentService.
+func (ivs investmentService) GetById(c context.Context, id int64) (db.Investment, error) {
+	return ivs.store.GetInvestmentById(c, id)
+}
+
+func (i investmentService) GetOverviewById(c context.Context, id int64) (db.InvestmentOverview, error) {
+	return i.store.GetInvestmentOverviewById(c, id)
 }
 
 // CountSearchPaging implements sv_interface.IInvestmentService.

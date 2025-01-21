@@ -82,7 +82,7 @@ func (ic *InvestmentController) Create(c *gin.Context) {
 	c.JSON(http.StatusOK, investment)
 }
 
-func (ic *InvestmentController) GetById(c *gin.Context) {
+func (ic *InvestmentController) GetOverviewById(c *gin.Context) {
 	idParam, ok := c.Params.Get("id")
 	if !ok {
 		c.JSON(http.StatusBadRequest, "id is required")
@@ -93,10 +93,27 @@ func (ic *InvestmentController) GetById(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
-	investment, err := ic.investmentService.GetById(c, int64(investmentId))
+	investment, err := ic.investmentService.GetOverviewById(c, int64(investmentId))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 	c.JSON(http.StatusOK, investment)
+}
+
+func (ic *InvestmentController) UpdateMarketPrice(c *gin.Context) {
+	var requestModel investment_model.UpdateMarketPriceRequestModel
+	if err := c.ShouldBindBodyWithJSON(&requestModel); err != nil {
+		c.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	result, err := ic.investmentService.UpdateMarketPrice(c, db.UpdateMarketPriceParams{
+		ID:          requestModel.InvestmentId,
+		MarketPrice: requestModel.MarketPrice,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+	c.JSON(http.StatusOK, result)
 }

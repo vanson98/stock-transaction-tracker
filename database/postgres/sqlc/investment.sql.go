@@ -153,6 +153,34 @@ func (q *Queries) GetInvestmentByTicker(ctx context.Context, arg GetInvestmentBy
 	return i, err
 }
 
+const getInvestmentOverviewById = `-- name: GetInvestmentOverviewById :one
+select id, account_id, channel_name, ticker, buy_value, buy_volume, capital_cost, current_volume, market_price, sell_value, sell_volume, fee, tax, status, profit from investment_overview
+where id=$1
+`
+
+func (q *Queries) GetInvestmentOverviewById(ctx context.Context, id int64) (InvestmentOverview, error) {
+	row := q.db.QueryRow(ctx, getInvestmentOverviewById, id)
+	var i InvestmentOverview
+	err := row.Scan(
+		&i.ID,
+		&i.AccountID,
+		&i.ChannelName,
+		&i.Ticker,
+		&i.BuyValue,
+		&i.BuyVolume,
+		&i.CapitalCost,
+		&i.CurrentVolume,
+		&i.MarketPrice,
+		&i.SellValue,
+		&i.SellVolume,
+		&i.Fee,
+		&i.Tax,
+		&i.Status,
+		&i.Profit,
+	)
+	return i, err
+}
+
 const searchInvestmentPaging = `-- name: SearchInvestmentPaging :many
 SELECT id, account_id, channel_name, ticker, buy_value, buy_volume, capital_cost, current_volume, market_price, sell_value, sell_volume, fee, tax, status, profit FROM investment_overview
 WHERE account_id = ANY($1::bigint[]) 

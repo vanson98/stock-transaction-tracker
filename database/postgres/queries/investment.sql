@@ -3,6 +3,10 @@ insert into investments(account_id,ticker,company_name,buy_volume,buy_value,capi
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 RETURNING *;
 
+-- name: GetInvestmentOverviewById :one
+select * from investment_overview
+where id=$1;
+
 -- name: GetInvestmentById :one
 select * from investments
 where id=$1;

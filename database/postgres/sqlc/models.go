@@ -232,7 +232,7 @@ type InvestmentOverview struct {
 	Fee           int64            `json:"fee"`
 	Tax           int64            `json:"tax"`
 	Status        InvestmentStatus `json:"status"`
-	Profit        pgtype.Numeric   `json:"profit"`
+	Profit        float64          `json:"profit"`
 }
 
 type Transaction struct {

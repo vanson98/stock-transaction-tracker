@@ -2,6 +2,7 @@ package service_test
 
 import (
 	"context"
+	"math"
 	db "stt/database/postgres/sqlc"
 	"stt/util"
 	"testing"
@@ -18,7 +19,7 @@ func createDefaultInvestmnet(t *testing.T, accountId int64) db.Investment {
 		BuyVolume:     0,
 		BuyValue:      0,
 		CapitalCost:   0,
-		MarketPrice:   0,
+		MarketPrice:   15000,
 		SellVolume:    0,
 		SellValue:     0,
 		CurrentVolume: 0,
@@ -70,6 +71,38 @@ func TestGetInvestmentById(t *testing.T) {
 	require.Equal(t, ivm.MarketPrice, investment.MarketPrice)
 	require.Equal(t, ivm.SellValue, investment.SellValue)
 	require.Equal(t, ivm.ID, investment.ID)
+}
+
+func TestGetInvestmentOverviewById(t *testing.T) {
+	user := createRandomUser(t)
+	acc := createRandomAccount(t, user.Username)
+	ivm := createDefaultInvestmnet(t, acc.ID)
+	createRandomTransaction(t, ivm.ID, ivm.Ticker, db.TradeTypeBUY, 100)
+
+	ivm, err := investmentService.GetById(context.Background(), ivm.ID)
+	require.NoError(t, err)
+
+	ivmOverview, err := investmentService.GetOverviewById(context.Background(), ivm.ID)
+	require.NoError(t, err)
+
+	require.NotEmpty(t, ivmOverview)
+	require.Equal(t, ivm.AccountID, ivmOverview.AccountID)
+	require.Equal(t, ivm.Ticker, ivmOverview.Ticker)
+	require.Equal(t, ivm.BuyValue, ivmOverview.BuyValue)
+	require.Equal(t, ivm.BuyVolume, ivmOverview.BuyVolume)
+	require.Equal(t, ivm.CapitalCost, ivmOverview.CapitalCost)
+	require.Equal(t, ivm.SellVolume, ivmOverview.SellVolume)
+	require.Equal(t, ivm.Status, ivmOverview.Status)
+	require.Equal(t, ivm.Fee, ivmOverview.Fee)
+	require.Equal(t, ivm.Tax, ivmOverview.Tax)
+	require.Equal(t, ivm.CurrentVolume, ivmOverview.CurrentVolume)
+	require.Equal(t, ivm.MarketPrice, ivmOverview.MarketPrice)
+	require.Equal(t, ivm.SellValue, ivmOverview.SellValue)
+	require.Equal(t, ivm.ID, ivmOverview.ID)
+	profit := (float64(ivm.MarketPrice-ivm.CapitalCost) * 100 / float64(ivm.CapitalCost))
+	factor := math.Pow(10, 2)
+	profit = math.Trunc(profit*factor) / factor
+	require.Equal(t, profit, ivmOverview.Profit)
 }
 
 func TestSearchInvestment(t *testing.T) {
