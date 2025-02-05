@@ -27,10 +27,8 @@ func (uc userController) CreateUser(ctx *gin.Context) {
 		return
 	}
 	user, err := uc.userService.CreateNew(ctx.Request.Context(), db.CreateUserParams{
-		Username:       requestModel.Username,
-		HashedPassword: requestModel.Password,
-		FullName:       requestModel.FullName,
-		Email:          requestModel.Email,
+		Username: requestModel.Username,
+		Email:    requestModel.Email,
 	})
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
