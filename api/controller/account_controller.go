@@ -16,6 +16,7 @@ import (
 
 type AccountController struct {
 	AccountService sv_interface.IAccountService
+	UserService    sv_interface.IUserService
 }
 
 func (ac *AccountController) CreateNewAccount(ctx *gin.Context) {
@@ -24,10 +25,27 @@ func (ac *AccountController) CreateNewAccount(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
-
+	// check user exist
+	user, err := ac.UserService.GetByUserName(ctx, reqBody.Username)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			user, err = ac.UserService.CreateNew(ctx, db.CreateUserParams{
+				Username: reqBody.Username,
+				Email:    reqBody.Email,
+			})
+			if err != nil {
+				ctx.JSON(http.StatusBadRequest, errorResponse(err))
+				return
+			}
+		} else {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
+	}
+	// create new account
 	account, err := ac.AccountService.CreateNew(ctx, db.CreateAccountParams{
 		ChannelName: reqBody.ChannelName,
-		Owner:       reqBody.Owner,
+		Owner:       user.Username,
 		Currency:    reqBody.Currency,
 	})
 

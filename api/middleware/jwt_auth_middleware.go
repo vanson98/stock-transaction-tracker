@@ -10,7 +10,7 @@ func UseTokenVerification(router *gin.RouterGroup) {
 	router.Use(func(ctx *gin.Context) {
 		authenCookie, err := ctx.Cookie("access_token")
 		if err != nil {
-			ctx.AbortWithError(http.StatusInternalServerError, err)
+			ctx.AbortWithError(http.StatusUnauthorized, err)
 			return
 		}
 		// make a verify token request to identity server

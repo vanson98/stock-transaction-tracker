@@ -7,9 +7,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func InitAccountRouter(routerGroup *gin.RouterGroup, accountService sv_interface.IAccountService) {
+func InitAccountRouter(routerGroup *gin.RouterGroup,
+	accountService sv_interface.IAccountService,
+	userService sv_interface.IUserService) {
 	accountController := controller.AccountController{
 		AccountService: accountService,
+		UserService:    userService,
 	}
 
 	routerGroup.POST("/accounts", accountController.CreateNewAccount)

@@ -28,7 +28,7 @@ func Setup(env *bootstrap.Env, timeout time.Duration, store db.IStore, engine *g
 
 	// set up router matching pattern
 	InitInvestmentRouter(protectedRouter, investmentService)
-	InitAccountRouter(protectedRouter, accountService)
+	InitAccountRouter(protectedRouter, accountService, userService)
 	InitUserRouter(protectedRouter, userService)
 	InitTransactionRouter(protectedRouter, transactionService)
 }
