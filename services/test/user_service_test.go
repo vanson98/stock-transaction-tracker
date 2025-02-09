@@ -11,21 +11,16 @@ import (
 
 func createRandomUser(t *testing.T) db.User {
 	arg := db.CreateUserParams{
-		Username:       util.RandomString(6),
-		HashedPassword: "hash",
-		FullName:       util.RandomString(6),
-		Email:          util.RandomEmail(),
+		Username: util.RandomString(6),
+		Email:    util.RandomEmail(),
 	}
 	user, err := userService.CreateNew(context.Background(), arg)
 	require.NoError(t, err)
 	require.NotEmpty(t, user)
 
 	require.Equal(t, arg.Username, user.Username)
-	require.NotEmpty(t, arg.FullName, user.FullName)
-	require.NotEmpty(t, arg.HashedPassword, user.HashedPassword)
 	require.NotEmpty(t, arg.Email, user.Email)
 
-	require.True(t, user.PasswordChangedAt.Time.IsZero())
 	require.NotZero(t, user.CreatedAt)
 	return user
 }
@@ -41,8 +36,5 @@ func TestGetUser(t *testing.T) {
 	require.NotEmpty(t, user)
 	require.Equal(t, newuser.Username, user.Username)
 	require.Equal(t, newuser.Email, user.Email)
-	require.Equal(t, newuser.FullName, user.FullName)
-	require.Equal(t, newuser.HashedPassword, user.HashedPassword)
-	require.Equal(t, newuser.PasswordChangedAt, user.PasswordChangedAt)
 	require.Equal(t, newuser.CreatedAt, user.CreatedAt)
 }
