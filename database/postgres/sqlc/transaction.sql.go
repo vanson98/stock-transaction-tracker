@@ -12,9 +12,9 @@ import (
 )
 
 const createTransaction = `-- name: CreateTransaction :one
-INSERT INTO transactions(investment_id,ticker,trading_date,trade,volume,order_price,match_volume,match_price,match_value,fee,tax,"cost","cost_of_goods_sold","return","status")
-VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
-RETURNING id, investment_id, ticker, trading_date, trade, volume, order_price, match_volume, match_price, match_value, fee, tax, cost, cost_of_goods_sold, return, status
+INSERT INTO transactions(investment_id,ticker,trading_date,trade,volume,order_price,match_volume,match_price,match_value,fee,tax,"cost","cost_of_goods_sold","return","status", return_error, inserted_date)
+VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15, $16, $17)
+RETURNING id, investment_id, ticker, trading_date, trade, volume, order_price, match_volume, match_price, match_value, fee, tax, cost, cost_of_goods_sold, return, status, return_error, inserted_date
 `
 
 type CreateTransactionParams struct {
@@ -33,6 +33,8 @@ type CreateTransactionParams struct {
 	CostOfGoodsSold int64             `json:"cost_of_goods_sold"`
 	Return          int64             `json:"return"`
 	Status          TransactionStatus `json:"status"`
+	ReturnError     int64             `json:"return_error"`
+	InsertedDate    pgtype.Timestamp  `json:"inserted_date"`
 }
 
 func (q *Queries) CreateTransaction(ctx context.Context, arg CreateTransactionParams) (Transaction, error) {
@@ -52,6 +54,8 @@ func (q *Queries) CreateTransaction(ctx context.Context, arg CreateTransactionPa
 		arg.CostOfGoodsSold,
 		arg.Return,
 		arg.Status,
+		arg.ReturnError,
+		arg.InsertedDate,
 	)
 	var i Transaction
 	err := row.Scan(
@@ -71,6 +75,8 @@ func (q *Queries) CreateTransaction(ctx context.Context, arg CreateTransactionPa
 		&i.CostOfGoodsSold,
 		&i.Return,
 		&i.Status,
+		&i.ReturnError,
+		&i.InsertedDate,
 	)
 	return i, err
 }

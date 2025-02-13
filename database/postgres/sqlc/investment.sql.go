@@ -313,10 +313,11 @@ UPDATE investments
 SET sell_volume = sell_volume + $2,
 sell_value = sell_value + $3,
 current_volume = current_volume - $2,
-fee = fee + $4,
-tax = tax + $5, 
-status= $6,
-updated_date = $7
+capital_cost = $4,
+fee = fee + $5,
+tax = tax + $6, 
+status= $7,
+updated_date = $8
 WHERE id = $1
 RETURNING id, account_id, ticker, company_name, buy_volume, buy_value, capital_cost, market_price, sell_volume, sell_value, current_volume, description, status, fee, tax, updated_date
 `
@@ -325,6 +326,7 @@ type UpdateInvestmentWhenSelingParams struct {
 	ID                    int64            `json:"id"`
 	SellTransactionVolume int64            `json:"sell_transaction_volume"`
 	SellTransactionValue  int64            `json:"sell_transaction_value"`
+	CapitalCost           int64            `json:"capital_cost"`
 	TransactionFee        int64            `json:"transaction_fee"`
 	TransactionTax        int64            `json:"transaction_tax"`
 	Status                InvestmentStatus `json:"status"`
@@ -336,6 +338,7 @@ func (q *Queries) UpdateInvestmentWhenSeling(ctx context.Context, arg UpdateInve
 		arg.ID,
 		arg.SellTransactionVolume,
 		arg.SellTransactionValue,
+		arg.CapitalCost,
 		arg.TransactionFee,
 		arg.TransactionTax,
 		arg.Status,

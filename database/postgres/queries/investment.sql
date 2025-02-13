@@ -53,6 +53,7 @@ UPDATE investments
 SET sell_volume = sell_volume + @sell_transaction_volume,
 sell_value = sell_value + @sell_transaction_value,
 current_volume = current_volume - @sell_transaction_volume,
+capital_cost = @capital_cost,
 fee = fee + @transaction_fee,
 tax = tax + @transaction_tax, 
 status= @status,

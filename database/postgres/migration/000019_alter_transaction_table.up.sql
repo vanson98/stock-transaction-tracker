@@ -1,0 +1,3 @@
+ALTER TABLE transactions
+ADD COLUMN return_error int8 NOT NULL DEFAULT 0,
+ADD COLUMN inserted_date TIMESTAMP NOT NULL DEFAULT now();
