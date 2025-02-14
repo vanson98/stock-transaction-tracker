@@ -146,7 +146,7 @@ func createRandomSellTransaction(t *testing.T, accountId int64, investmentId int
 	}
 }
 
-func TestImportTransaction(t *testing.T) {
+func TestImportTransactions(t *testing.T) {
 	user := createRandomUser(t)
 	account := createRandomAccount(t, user.Username)
 	account2 := createRandomAccount(t, user.Username)
@@ -178,7 +178,7 @@ func TestImportTransaction(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			switch tc.name {
 			case "positive case":
-				importedTransactions, err := tranService.ImportTransaction(context.Background(), tc.accountId, tc.transactions)
+				importedTransactions, err := tranService.ImportTransactions(context.Background(), tc.accountId, tc.transactions)
 				require.NoError(t, err)
 				require.NotNil(t, importedTransactions)
 				for i, importedTrans := range importedTransactions {
@@ -200,23 +200,23 @@ func TestImportTransaction(t *testing.T) {
 				}
 				slices.Reverse(tc.transactions)
 			case "account balance not enough":
-				_, err := tranService.ImportTransaction(context.Background(), tc.accountId, tc.transactions)
+				_, err := tranService.ImportTransactions(context.Background(), tc.accountId, tc.transactions)
 				require.Error(t, err)
 				require.EqualError(t, err, "account balance is less than transation cost")
 				slices.Reverse(tc.transactions)
 			case "buy transaction cost not match":
 				originTxCost := tc.transactions[0].Cost
 				tc.transactions[0].Cost = 0
-				_, err := tranService.ImportTransaction(context.Background(), tc.accountId, tc.transactions)
+				_, err := tranService.ImportTransactions(context.Background(), tc.accountId, tc.transactions)
 				require.EqualError(t, err, fmt.Sprintf("%s - %s transaction's cost is not match with capital cost in investment", tc.transactions[0].Ticker, tc.transactions[0].Trade))
 				tc.transactions[0].Cost = originTxCost
 			case "investment volume is lesser than transaction sell volume":
-				_, err := tranService.ImportTransaction(context.Background(), tc.accountId, tc.transactions)
+				_, err := tranService.ImportTransactions(context.Background(), tc.accountId, tc.transactions)
 				require.EqualError(t, err, fmt.Sprintf("%s - %s transaction's match volume is lesser than investment volume", tc.transactions[0].Ticker, tc.transactions[0].Trade))
 			case "sell transaction return not match":
 				var manipulatedTransaction = tc.transactions[len(transactions)-2]
 				tc.transactions[len(transactions)-2].Return = -1
-				_, err := tranService.ImportTransaction(context.Background(), tc.accountId, tc.transactions)
+				_, err := tranService.ImportTransactions(context.Background(), tc.accountId, tc.transactions)
 				require.EqualError(t, err, fmt.Sprintf("%s - %s transaction's return value is not match", manipulatedTransaction.Ticker, manipulatedTransaction.Trade))
 			}
 
@@ -224,8 +224,53 @@ func TestImportTransaction(t *testing.T) {
 	}
 }
 
+func TestImportTransation(t *testing.T) {
+	user := createRandomUser(t)
+	account := createRandomAccount(t, user.Username)
+	transactions, err := readTransactionFileData()
+	require.NoError(t, err)
+	require.NotNil(t, transactions)
+
+	// buy transaction
+	subCases := []struct {
+		name              string
+		importTransaction db.Transaction
+	}{
+		{
+			name:              "buy transaction",
+			importTransaction: transactions[len(transactions)-1],
+		},
+		{
+			name:              "sell transaction",
+			importTransaction: transactions[len(transactions)-2],
+		},
+	}
+	for _, subcase := range subCases {
+		t.Run(subcase.name, func(t *testing.T) {
+			transaction := subcase.importTransaction
+
+			importedTrans, err := tranService.ImportTransaction(context.Background(), account.ID, transaction)
+			require.NoError(t, err)
+			require.NotNil(t, importedTrans)
+			require.Equal(t, transaction.Ticker, importedTrans.Ticker)
+			require.Equal(t, transaction.TradingDate.Time.UTC(), importedTrans.TradingDate.Time)
+			require.Equal(t, transaction.Trade, importedTrans.Trade)
+			require.Equal(t, transaction.Volume, importedTrans.Volume)
+			require.Equal(t, transaction.OrderPrice, importedTrans.OrderPrice)
+			require.Equal(t, transaction.MatchVolume, importedTrans.MatchVolume)
+			require.Equal(t, transaction.MatchPrice, importedTrans.MatchPrice)
+			require.Equal(t, transaction.MatchValue, importedTrans.MatchValue)
+			require.Equal(t, transaction.Fee, importedTrans.Fee)
+			require.Equal(t, transaction.Tax, importedTrans.Tax)
+			require.Equal(t, transaction.Cost, importedTrans.Cost)
+			require.Equal(t, transaction.Return, importedTrans.Return)
+			require.Equal(t, transaction.Status, importedTrans.Status)
+		})
+	}
+}
+
 func readTransactionFileData() ([]db.Transaction, error) {
-	excelFile, err := os.Open("./data/105CA35050.xlsx")
+	excelFile, err := os.Open("./testdata/105CA35050.xlsx")
 	if err != nil {
 		return nil, err
 	}
@@ -308,7 +353,7 @@ func TestGetSumarizeTransactionInfo(t *testing.T) {
 	require.GreaterOrEqual(t, result.SumReturn, int64(0))
 	require.GreaterOrEqual(t, result.SumTax, int64(0))
 
-	importedTransactions, err := tranService.ImportTransaction(context.Background(), acc.ID, transactions)
+	importedTransactions, err := tranService.ImportTransactions(context.Background(), acc.ID, transactions)
 	require.NoError(t, err)
 	require.NotEmpty(t, importedTransactions)
 

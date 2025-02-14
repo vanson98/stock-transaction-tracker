@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -151,9 +153,9 @@ func (ac *transactionController) ImportTransactions(c *gin.Context) {
 			} else {
 				trade = db.TradeTypeSELL
 			}
-			volume, _ := strconv.Atoi(row[3])
+			volume, _ := strconv.Atoi(strings.Replace(row[3], ",", "", -1))
 			orderPrice, _ := strconv.Atoi(strings.Replace(row[4], ",", "", -1))
-			matchVolume, _ := strconv.Atoi(row[5])
+			matchVolume, _ := strconv.Atoi(strings.Replace(row[5], ",", "", -1))
 			matchPrice, _ := strconv.Atoi(strings.Replace(row[6], ",", "", -1))
 			matchValue, _ := strconv.Atoi(strings.Replace(row[7], ",", "", -1))
 			fee, _ := strconv.Atoi(strings.Replace(row[8], ",", "", -1))
@@ -181,10 +183,68 @@ func (ac *transactionController) ImportTransactions(c *gin.Context) {
 			transactions = append(transactions, transaction)
 		}
 	}
-	result, err := ac.transactionService.ImportTransaction(c, int64(accountId), transactions)
+	result, err := ac.transactionService.ImportTransactions(c, int64(accountId), transactions)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, result)
+}
+
+func (ac *transactionController) AddTransaction(c *gin.Context) {
+	var addTransactionRequest transaction_model.AddTransactionRequest
+	err := c.ShouldBindBodyWithJSON(&addTransactionRequest)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	tradingDate, err := time.Parse("02/01/2006", addTransactionRequest.TradingDate)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	transaction, err := ac.transactionService.ImportTransaction(c, addTransactionRequest.AccountId, db.Transaction{
+		Ticker: addTransactionRequest.Ticker,
+		TradingDate: pgtype.Timestamp{
+			Time:  tradingDate,
+			Valid: true,
+		},
+		Trade:       db.TradeType(addTransactionRequest.Trade),
+		Volume:      addTransactionRequest.Volume,
+		OrderPrice:  addTransactionRequest.OrderPrice,
+		MatchVolume: addTransactionRequest.MatchVolume,
+		MatchPrice:  addTransactionRequest.MatchPrice,
+		MatchValue:  addTransactionRequest.MatchValue,
+		Fee:         addTransactionRequest.Fee,
+		Tax:         addTransactionRequest.Tax,
+		Cost:        addTransactionRequest.Cost,
+		Return:      addTransactionRequest.Return,
+		Status:      db.TransactionStatus(addTransactionRequest.Status),
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, errorResponse(err))
+	} else {
+		// response to cron job
+		c.JSON(http.StatusOK, transaction)
+	}
+
+	apiGatewayNoti := struct {
+		TransactionId int64
+		Error         string
+	}{
+		Error:         "",
+		TransactionId: transaction.ID,
+	}
+	if err != nil {
+		apiGatewayNoti.Error = err.Error()
+	}
+	// transer result to api gate way
+	client := http.Client{}
+	jsonData, _ := json.Marshal(apiGatewayNoti)
+	buffer := bytes.Buffer{}
+	buffer.Write(jsonData)
+	_, err = client.Post("http://localhost:6061/notification", "application/json", &buffer)
+	if err != nil {
+		fmt.Println(err)
+	}
 }
