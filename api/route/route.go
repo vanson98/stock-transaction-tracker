@@ -11,7 +11,7 @@ import (
 )
 
 func Setup(env *bootstrap.Env, timeout time.Duration, store db.IStore, engine *gin.Engine) {
-	middleware.UseCors(engine)
+
 	//publicRouter := gin.Group("")
 
 	accountService := services.InitAccountService(store, timeout)
@@ -21,8 +21,14 @@ func Setup(env *bootstrap.Env, timeout time.Duration, store db.IStore, engine *g
 
 	// All protected APIs
 	protectedRouter := engine.Group("")
+
+	// set up middlewares
+	middleware.UseCors(protectedRouter)
+	middleware.UseTokenVerification(protectedRouter)
+
+	// set up router matching pattern
 	InitInvestmentRouter(protectedRouter, investmentService)
-	InitAccountRouter(protectedRouter, accountService)
+	InitAccountRouter(protectedRouter, accountService, userService)
 	InitUserRouter(protectedRouter, userService)
 	InitTransactionRouter(protectedRouter, transactionService)
 }

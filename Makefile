@@ -28,12 +28,15 @@ new_migration:
 sqlc: 
 	sqlc generate
 
-store_test: 
-	go test -v -cover ./database/postgres/sqlc
+service_test: 
+	go test  -coverpkg=./services -v -cover -coverprofile=coverage.out ./services/test
+
+cov2lcov:
+	gcov2lcov -infile=coverage.out -outfile=lcov.info 
 
 controller_test: 
 	go test -coverpkg=./api/controller -v -cover ./api/test
 
 mock:
 	mockgen -package mock_service  -destination services/mock/service_mock.go stt/services/interfaces IAccountService,IInvestmentService,IUserService
-.PHONY: sqlc runapp postgres createdb dropdb migrateup migratedown server mock store_test controller_test
+.PHONY: sqlc runapp postgres createdb dropdb migrateup migratedown server mock service_test controller_test cov2lcov

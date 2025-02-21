@@ -7,11 +7,9 @@ import (
 
 type IInvestmentService interface {
 	Create(c context.Context, param db.CreateInvestmentParams) (db.Investment, error)
-	//Update(c context.Context, investment *Investment)
+	GetOverviewById(c context.Context, id int64) (db.InvestmentOverview, error)
 	GetById(c context.Context, id int64) (db.Investment, error)
-	//GetAll(c context.Context)
-	//Delete(c context.Context, id int64)
 	SearchPaging(c context.Context, param db.SearchInvestmentPagingParams) ([]db.InvestmentOverview, error)
 	Count(c context.Context, db db.CountInvestmentParams) (int64, error)
-	GetByTicker(ctx context.Context, params db.GetInvestmentByTickerParams) (db.Investment, error)
+	UpdateMarketPrice(c context.Context, db db.UpdateMarketPriceParams) (db.UpdateMarketPriceRow, error)
 }

@@ -2,6 +2,7 @@ package service_test
 
 import (
 	"context"
+	"math"
 	db "stt/database/postgres/sqlc"
 	"stt/util"
 	"testing"
@@ -10,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func createRandomInvestmnet(t *testing.T, accountId int64) db.Investment {
+func createDefaultInvestmnet(t *testing.T, accountId int64) db.Investment {
 	arg := db.CreateInvestmentParams{
 		AccountID:     accountId,
 		Ticker:        util.RandomUpperString(3),
@@ -18,7 +19,7 @@ func createRandomInvestmnet(t *testing.T, accountId int64) db.Investment {
 		BuyVolume:     0,
 		BuyValue:      0,
 		CapitalCost:   0,
-		MarketPrice:   0,
+		MarketPrice:   15000,
 		SellVolume:    0,
 		SellValue:     0,
 		CurrentVolume: 0,
@@ -41,17 +42,101 @@ func createRandomInvestmnet(t *testing.T, accountId int64) db.Investment {
 }
 
 func TestCreateInvestment(t *testing.T) {
-	acc := createRandomAccount(t)
-	createRandomInvestmnet(t, acc.ID)
+	user := createRandomUser(t)
+	acc := createRandomAccount(t, user.Username)
+	createDefaultInvestmnet(t, acc.ID)
 }
 
-func TestGetInvestmentByTicker(t *testing.T) {
-	acc := createRandomAccount(t)
-	ivm := createRandomInvestmnet(t, acc.ID)
-	ivm2, err := investmentService.GetByTicker(context.Background(), db.GetInvestmentByTickerParams{
-		Ticker:    ivm.Ticker,
-		AccountID: acc.ID,
+func TestGetInvestmentById(t *testing.T) {
+	user := createRandomUser(t)
+	acc := createRandomAccount(t, user.Username)
+	ivm := createDefaultInvestmnet(t, acc.ID)
+
+	investment, err := investmentService.GetById(context.Background(), ivm.ID)
+	require.NoError(t, err)
+	require.NotEmpty(t, investment)
+	require.Equal(t, ivm.AccountID, investment.AccountID)
+	require.Equal(t, ivm.Ticker, investment.Ticker)
+	require.Equal(t, ivm.BuyValue, investment.BuyValue)
+	require.Equal(t, ivm.BuyVolume, investment.BuyVolume)
+	require.Equal(t, ivm.CapitalCost, investment.CapitalCost)
+	require.Equal(t, ivm.SellVolume, investment.SellVolume)
+	require.Equal(t, ivm.Status, investment.Status)
+	require.Equal(t, ivm.Fee, investment.Fee)
+	require.Equal(t, ivm.Tax, investment.Tax)
+	require.Equal(t, ivm.UpdatedDate, investment.UpdatedDate)
+	require.Equal(t, ivm.CurrentVolume, investment.CurrentVolume)
+	require.Equal(t, ivm.Description, investment.Description)
+	require.Equal(t, ivm.CompanyName, investment.CompanyName)
+	require.Equal(t, ivm.MarketPrice, investment.MarketPrice)
+	require.Equal(t, ivm.SellValue, investment.SellValue)
+	require.Equal(t, ivm.ID, investment.ID)
+}
+
+func TestGetInvestmentOverviewById(t *testing.T) {
+	user := createRandomUser(t)
+	acc := createRandomAccount(t, user.Username)
+	ivm := createDefaultInvestmnet(t, acc.ID)
+	createRandomTransaction(t, ivm.ID, ivm.Ticker, db.TradeTypeBUY, 100)
+
+	ivm, err := investmentService.GetById(context.Background(), ivm.ID)
+	require.NoError(t, err)
+
+	ivmOverview, err := investmentService.GetOverviewById(context.Background(), ivm.ID)
+	require.NoError(t, err)
+
+	require.NotEmpty(t, ivmOverview)
+	require.Equal(t, ivm.AccountID, ivmOverview.AccountID)
+	require.Equal(t, ivm.Ticker, ivmOverview.Ticker)
+	require.Equal(t, ivm.BuyValue, ivmOverview.BuyValue)
+	require.Equal(t, ivm.BuyVolume, ivmOverview.BuyVolume)
+	require.Equal(t, ivm.CapitalCost, ivmOverview.CapitalCost)
+	require.Equal(t, ivm.SellVolume, ivmOverview.SellVolume)
+	require.Equal(t, ivm.Status, ivmOverview.Status)
+	require.Equal(t, ivm.Fee, ivmOverview.Fee)
+	require.Equal(t, ivm.Tax, ivmOverview.Tax)
+	require.Equal(t, ivm.CurrentVolume, ivmOverview.CurrentVolume)
+	require.Equal(t, ivm.MarketPrice, ivmOverview.MarketPrice)
+	require.Equal(t, ivm.SellValue, ivmOverview.SellValue)
+	require.Equal(t, ivm.ID, ivmOverview.ID)
+	profit := (float64(ivm.MarketPrice-ivm.CapitalCost) * 100 / float64(ivm.CapitalCost))
+	factor := math.Pow(10, 2)
+	profit = math.Trunc(profit*factor) / factor
+	require.Equal(t, profit, ivmOverview.Profit)
+}
+
+func TestSearchInvestment(t *testing.T) {
+	user := createRandomUser(t)
+	acc := createRandomAccount(t, user.Username)
+	n := 10
+	for i := 0; i < n; i++ {
+		createDefaultInvestmnet(t, acc.ID)
+	}
+
+	investments, err := investmentService.SearchPaging(context.Background(), db.SearchInvestmentPagingParams{
+		AccountIds: []int64{acc.ID},
+		SearchText: "",
+		OrderBy:    "ticker",
+		SortType:   "descending",
+		FromOffset: 0,
+		TakeLimit:  10,
 	})
 	require.NoError(t, err)
-	require.NotEmpty(t, ivm2)
+	require.NotEmpty(t, investments)
+	require.Len(t, investments, n)
+}
+
+func TestUpdateMarketPrice(t *testing.T) {
+	user := createRandomUser(t)
+	acc := createRandomAccount(t, user.Username)
+	ivm := createDefaultInvestmnet(t, acc.ID)
+	updateMarketPrice := util.RandomInt(1000, 100000)
+	result, err := investmentService.UpdateMarketPrice(context.Background(), db.UpdateMarketPriceParams{
+		ID:          ivm.ID,
+		MarketPrice: updateMarketPrice,
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, result)
+	require.Equal(t, updateMarketPrice, result.MarketPrice)
+	require.Equal(t, ivm.ID, result.ID)
 }

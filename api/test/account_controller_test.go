@@ -263,7 +263,7 @@ func TestTranserMoneyAPI(t *testing.T) {
 	}
 }
 
-func TestGetAllAccountAPI(t *testing.T) {
+func TestGetAllAccountOverviewAPI(t *testing.T) {
 	// create 2 account for testing
 	var accountRows []db.ListAllAccountRow
 	acc1 := randomAccount()
@@ -288,7 +288,7 @@ func TestGetAllAccountAPI(t *testing.T) {
 		{
 			name: "Happy Case",
 			buildStub: func(mockService *mock_service.MockIAccountService) {
-				mockService.EXPECT().ListAllAccount(gomock.Any()).Times(1).Return(accountRows, nil)
+				mockService.EXPECT().GetAllOverview(gomock.Any()).Times(1).Return(accountRows, nil)
 			},
 			checkResponse: func(t *testing.T, response *httptest.ResponseRecorder) {
 				require.Equal(t, response.Result().StatusCode, 200)

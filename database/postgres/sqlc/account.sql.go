@@ -67,16 +67,6 @@ func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (A
 	return i, err
 }
 
-const deleteAccount = `-- name: DeleteAccount :exec
-DELETE FROM accounts
-WHERE id=$1
-`
-
-func (q *Queries) DeleteAccount(ctx context.Context, id int64) error {
-	_, err := q.db.Exec(ctx, deleteAccount, id)
-	return err
-}
-
 const getAccountById = `-- name: GetAccountById :one
 SELECT id, channel_name, owner, balance, currency, created_at FROM accounts
 WHERE id=$1 LIMIT 1
@@ -116,56 +106,7 @@ func (q *Queries) GetAccountForUpdate(ctx context.Context, id int64) (Account, e
 	return i, err
 }
 
-const getAccountInfoByIds = `-- name: GetAccountInfoByIds :many
-SELECT a.id, a.channel_name, a.balance as cash, 
-SUM(
-	CASE WHEN i.capital_cost IS NULL THEN 0 ELSE (i.capital_cost * i.current_volume) END
-	)
-AS total_cogs,
-SUM(
-	CASE WHEN i.market_price IS NULL THEN 0 ELSE (i.market_price * i.current_volume) END
-) AS market_value
-FROM accounts as a
-LEFT JOIN investments AS i ON a.id = i.account_id
-WHERE a.id = ANY($1::bigint[])
-GROUP BY a.id,  a.channel_name, a.balance
-`
-
-type GetAccountInfoByIdsRow struct {
-	ID          int64  `json:"id"`
-	ChannelName string `json:"channel_name"`
-	Cash        int64  `json:"cash"`
-	TotalCogs   int64  `json:"total_cogs"`
-	MarketValue int64  `json:"market_value"`
-}
-
-func (q *Queries) GetAccountInfoByIds(ctx context.Context, accountIds []int64) ([]GetAccountInfoByIdsRow, error) {
-	rows, err := q.db.Query(ctx, getAccountInfoByIds, accountIds)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GetAccountInfoByIdsRow
-	for rows.Next() {
-		var i GetAccountInfoByIdsRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.ChannelName,
-			&i.Cash,
-			&i.TotalCogs,
-			&i.MarketValue,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getAccountPaging = `-- name: GetAccountPaging :many
+const getAllAccountOverview = `-- name: GetAllAccountOverview :many
 SELECT a.id, a.channel_name, a.balance, a.currency, 
 SUM(
 	CASE WHEN e.amount < 0 THEN e.amount ELSE 0 END
@@ -179,7 +120,7 @@ WHERE "owner" = $1
 GROUP BY a.id, a.channel_name, a.balance, a.currency
 `
 
-type GetAccountPagingRow struct {
+type GetAllAccountOverviewRow struct {
 	ID          int64  `json:"id"`
 	ChannelName string `json:"channel_name"`
 	Balance     int64  `json:"balance"`
@@ -188,15 +129,15 @@ type GetAccountPagingRow struct {
 	Deposit     int64  `json:"deposit"`
 }
 
-func (q *Queries) GetAccountPaging(ctx context.Context, owner string) ([]GetAccountPagingRow, error) {
-	rows, err := q.db.Query(ctx, getAccountPaging, owner)
+func (q *Queries) GetAllAccountOverview(ctx context.Context, owner string) ([]GetAllAccountOverviewRow, error) {
+	rows, err := q.db.Query(ctx, getAllAccountOverview, owner)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetAccountPagingRow
+	var items []GetAllAccountOverviewRow
 	for rows.Next() {
-		var i GetAccountPagingRow
+		var i GetAllAccountOverviewRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.ChannelName,
@@ -204,6 +145,55 @@ func (q *Queries) GetAccountPaging(ctx context.Context, owner string) ([]GetAcco
 			&i.Currency,
 			&i.Withdraw,
 			&i.Deposit,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getStockAssetOverview = `-- name: GetStockAssetOverview :many
+SELECT a.id, a.channel_name, a.balance as cash, 
+SUM(
+	CASE WHEN i.status = 'active'THEN (i.capital_cost * i.current_volume) ELSE 0  END
+	)
+AS total_cogs,
+SUM(
+	CASE WHEN i.status = 'active' THEN (i.market_price * i.current_volume) ELSE 0  END
+) AS market_value
+FROM accounts as a
+LEFT JOIN investments AS i ON a.id = i.account_id
+WHERE a.id = ANY($1::bigint[])
+GROUP BY a.id,  a.channel_name, a.balance
+`
+
+type GetStockAssetOverviewRow struct {
+	ID          int64  `json:"id"`
+	ChannelName string `json:"channel_name"`
+	Cash        int64  `json:"cash"`
+	TotalCogs   int64  `json:"total_cogs"`
+	MarketValue int64  `json:"market_value"`
+}
+
+func (q *Queries) GetStockAssetOverview(ctx context.Context, accountIds []int64) ([]GetStockAssetOverviewRow, error) {
+	rows, err := q.db.Query(ctx, getStockAssetOverview, accountIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetStockAssetOverviewRow
+	for rows.Next() {
+		var i GetStockAssetOverviewRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ChannelName,
+			&i.Cash,
+			&i.TotalCogs,
+			&i.MarketValue,
 		); err != nil {
 			return nil, err
 		}

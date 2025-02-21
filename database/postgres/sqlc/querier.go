@@ -16,24 +16,22 @@ type Querier interface {
 	CreateInvestment(ctx context.Context, arg CreateInvestmentParams) (Investment, error)
 	CreateTransaction(ctx context.Context, arg CreateTransactionParams) (Transaction, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
-	DeleteAccount(ctx context.Context, id int64) error
 	GetAccountById(ctx context.Context, id int64) (Account, error)
 	GetAccountForUpdate(ctx context.Context, id int64) (Account, error)
-	GetAccountInfoByIds(ctx context.Context, accountIds []int64) ([]GetAccountInfoByIdsRow, error)
-	GetAccountPaging(ctx context.Context, owner string) ([]GetAccountPagingRow, error)
+	GetAllAccountOverview(ctx context.Context, owner string) ([]GetAllAccountOverviewRow, error)
 	GetEntryById(ctx context.Context, id int64) (Entry, error)
 	GetInvestmentById(ctx context.Context, id int64) (Investment, error)
 	GetInvestmentByTicker(ctx context.Context, arg GetInvestmentByTickerParams) (Investment, error)
-	GetInvestmentsByAccountId(ctx context.Context, accountID int64) ([]Investment, error)
-	GetSumTransactionInfo(ctx context.Context, arg GetSumTransactionInfoParams) (GetSumTransactionInfoRow, error)
-	GetTransactionById(ctx context.Context, id int64) (Transaction, error)
+	GetInvestmentOverviewById(ctx context.Context, id int64) (InvestmentOverview, error)
+	GetStockAssetOverview(ctx context.Context, accountIds []int64) ([]GetStockAssetOverviewRow, error)
+	GetTransactionSummarizeInfo(ctx context.Context, arg GetTransactionSummarizeInfoParams) (GetTransactionSummarizeInfoRow, error)
 	GetTransactionsPaging(ctx context.Context, arg GetTransactionsPagingParams) ([]GetTransactionsPagingRow, error)
 	GetUser(ctx context.Context, username string) (User, error)
 	ListAllAccount(ctx context.Context, owner string) ([]ListAllAccountRow, error)
 	SearchInvestmentPaging(ctx context.Context, arg SearchInvestmentPagingParams) ([]InvestmentOverview, error)
-	UpdateInvestmentStatus(ctx context.Context, arg UpdateInvestmentStatusParams) error
-	UpdateInvestmentWhenBuying(ctx context.Context, arg UpdateInvestmentWhenBuyingParams) error
-	UpdateInvestmentWhenSeling(ctx context.Context, arg UpdateInvestmentWhenSelingParams) error
+	UpdateInvestmentWhenBuying(ctx context.Context, arg UpdateInvestmentWhenBuyingParams) (Investment, error)
+	UpdateInvestmentWhenSeling(ctx context.Context, arg UpdateInvestmentWhenSelingParams) (Investment, error)
+	UpdateMarketPrice(ctx context.Context, arg UpdateMarketPriceParams) (UpdateMarketPriceRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

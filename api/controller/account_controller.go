@@ -16,6 +16,7 @@ import (
 
 type AccountController struct {
 	AccountService sv_interface.IAccountService
+	UserService    sv_interface.IUserService
 }
 
 func (ac *AccountController) CreateNewAccount(ctx *gin.Context) {
@@ -24,10 +25,27 @@ func (ac *AccountController) CreateNewAccount(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
-
+	// check user exist
+	user, err := ac.UserService.GetByUserName(ctx, reqBody.Username)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			user, err = ac.UserService.CreateNew(ctx, db.CreateUserParams{
+				Username: reqBody.Username,
+				Email:    reqBody.Email,
+			})
+			if err != nil {
+				ctx.JSON(http.StatusBadRequest, errorResponse(err))
+				return
+			}
+		} else {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
+	}
+	// create new account
 	account, err := ac.AccountService.CreateNew(ctx, db.CreateAccountParams{
 		ChannelName: reqBody.ChannelName,
-		Owner:       reqBody.Owner,
+		Owner:       user.Username,
 		Currency:    reqBody.Currency,
 	})
 
@@ -46,30 +64,14 @@ func (ac *AccountController) CreateNewAccount(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, account)
 }
 
-func (ac *AccountController) GetAccountById(ctx *gin.Context) {
-	requestParam := account_model.GetAccountRequest{}
-	err := ctx.ShouldBindUri(&requestParam)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	account, err := ac.AccountService.GetById(ctx, requestParam.Id)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-	ctx.JSON(http.StatusOK, account)
-}
-
-func (ac *AccountController) GetAccountInfoByIds(ctx *gin.Context) {
+func (ac *AccountController) GetAccountOverview(ctx *gin.Context) {
 	var requestData account_model.GetAccountInfoRequest
 	err := ctx.ShouldBindQuery(&requestData)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
-	acc, err := ac.AccountService.GetAccountInfoByIds(ctx, requestData.Ids)
+	acc, err := ac.AccountService.GetStockAssetOverview(ctx, requestData.Ids)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -91,14 +93,14 @@ func (ac *AccountController) GetListAccount(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, accounts)
 }
 
-func (ac *AccountController) GetAccoutPaging(ctx *gin.Context) {
+func (ac *AccountController) GetAllAccountOverview(ctx *gin.Context) {
 	requestDataModel := account_model.SearchAccountRequest{}
 	err := ctx.ShouldBindQuery(&requestDataModel)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
-	accounts, err := ac.AccountService.GetAllByOwner(ctx, requestDataModel.Onwer)
+	accounts, err := ac.AccountService.GetAllOverview(ctx, requestDataModel.Onwer)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))

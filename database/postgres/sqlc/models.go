@@ -232,7 +232,7 @@ type InvestmentOverview struct {
 	Fee           int64            `json:"fee"`
 	Tax           int64            `json:"tax"`
 	Status        InvestmentStatus `json:"status"`
-	Profit        pgtype.Numeric   `json:"profit"`
+	Profit        float64          `json:"profit"`
 }
 
 type Transaction struct {
@@ -252,13 +252,12 @@ type Transaction struct {
 	CostOfGoodsSold int64             `json:"cost_of_goods_sold"`
 	Return          int64             `json:"return"`
 	Status          TransactionStatus `json:"status"`
+	ReturnError     int64             `json:"return_error"`
+	InsertedDate    pgtype.Timestamp  `json:"inserted_date"`
 }
 
 type User struct {
-	Username          string             `json:"username"`
-	HashedPassword    string             `json:"hashed_password"`
-	FullName          string             `json:"full_name"`
-	Email             string             `json:"email"`
-	PasswordChangedAt pgtype.Timestamptz `json:"password_changed_at"`
-	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+	Username  string             `json:"username"`
+	Email     string             `json:"email"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }

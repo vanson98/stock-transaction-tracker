@@ -153,51 +153,39 @@ func (q *Queries) GetInvestmentByTicker(ctx context.Context, arg GetInvestmentBy
 	return i, err
 }
 
-const getInvestmentsByAccountId = `-- name: GetInvestmentsByAccountId :many
-select id, account_id, ticker, company_name, buy_volume, buy_value, capital_cost, market_price, sell_volume, sell_value, current_volume, description, status, fee, tax, updated_date from investments
-where account_id=$1
+const getInvestmentOverviewById = `-- name: GetInvestmentOverviewById :one
+select id, account_id, channel_name, ticker, buy_value, buy_volume, capital_cost, current_volume, market_price, sell_value, sell_volume, fee, tax, status, profit from investment_overview
+where id=$1
 `
 
-func (q *Queries) GetInvestmentsByAccountId(ctx context.Context, accountID int64) ([]Investment, error) {
-	rows, err := q.db.Query(ctx, getInvestmentsByAccountId, accountID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Investment
-	for rows.Next() {
-		var i Investment
-		if err := rows.Scan(
-			&i.ID,
-			&i.AccountID,
-			&i.Ticker,
-			&i.CompanyName,
-			&i.BuyVolume,
-			&i.BuyValue,
-			&i.CapitalCost,
-			&i.MarketPrice,
-			&i.SellVolume,
-			&i.SellValue,
-			&i.CurrentVolume,
-			&i.Description,
-			&i.Status,
-			&i.Fee,
-			&i.Tax,
-			&i.UpdatedDate,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+func (q *Queries) GetInvestmentOverviewById(ctx context.Context, id int64) (InvestmentOverview, error) {
+	row := q.db.QueryRow(ctx, getInvestmentOverviewById, id)
+	var i InvestmentOverview
+	err := row.Scan(
+		&i.ID,
+		&i.AccountID,
+		&i.ChannelName,
+		&i.Ticker,
+		&i.BuyValue,
+		&i.BuyVolume,
+		&i.CapitalCost,
+		&i.CurrentVolume,
+		&i.MarketPrice,
+		&i.SellValue,
+		&i.SellVolume,
+		&i.Fee,
+		&i.Tax,
+		&i.Status,
+		&i.Profit,
+	)
+	return i, err
 }
 
 const searchInvestmentPaging = `-- name: SearchInvestmentPaging :many
 SELECT id, account_id, channel_name, ticker, buy_value, buy_volume, capital_cost, current_volume, market_price, sell_value, sell_volume, fee, tax, status, profit FROM investment_overview
-WHERE account_id = ANY($1::bigint[]) AND ticker ILIKE $2::text
+WHERE account_id = ANY($1::bigint[]) 
+    AND ticker ILIKE 
+        CASE WHEN $2::text = '' THEN '%%' ELSE '%' || $2::text || '%' END
 ORDER BY 
     CASE WHEN $3::text = 'ticker' AND $4::text = 'ascending' THEN ticker END ASC,
     CASE WHEN $3::text = 'ticker' AND $4::text = 'descending' THEN ticker END DESC,
@@ -262,93 +250,142 @@ func (q *Queries) SearchInvestmentPaging(ctx context.Context, arg SearchInvestme
 	return items, nil
 }
 
-const updateInvestmentStatus = `-- name: UpdateInvestmentStatus :exec
+const updateInvestmentWhenBuying = `-- name: UpdateInvestmentWhenBuying :one
 update investments
-set status=$2
-WHERE id=$1
-`
-
-type UpdateInvestmentStatusParams struct {
-	ID     int64            `json:"id"`
-	Status InvestmentStatus `json:"status"`
-}
-
-func (q *Queries) UpdateInvestmentStatus(ctx context.Context, arg UpdateInvestmentStatusParams) error {
-	_, err := q.db.Exec(ctx, updateInvestmentStatus, arg.ID, arg.Status)
-	return err
-}
-
-const updateInvestmentWhenBuying = `-- name: UpdateInvestmentWhenBuying :exec
-update investments
-set buy_volume = $2,
-buy_value = $3,
+set buy_volume = buy_volume + $2,
+buy_value = buy_value + $3,
 capital_cost = $4,
-current_volume = $5,
-fee = $6,
-tax = $7,
-updated_date = $8, 
-status=$9
+current_volume = current_volume + $2,
+fee = fee + $5,
+tax = tax + $6,
+updated_date = $7, 
+status = $8
 where id = $1
+RETURNING id, account_id, ticker, company_name, buy_volume, buy_value, capital_cost, market_price, sell_volume, sell_value, current_volume, description, status, fee, tax, updated_date
 `
 
 type UpdateInvestmentWhenBuyingParams struct {
-	ID            int64            `json:"id"`
-	BuyVolume     int64            `json:"buy_volume"`
-	BuyValue      int64            `json:"buy_value"`
-	CapitalCost   int64            `json:"capital_cost"`
-	CurrentVolume int64            `json:"current_volume"`
-	Fee           int64            `json:"fee"`
-	Tax           int64            `json:"tax"`
-	UpdatedDate   pgtype.Timestamp `json:"updated_date"`
-	Status        InvestmentStatus `json:"status"`
+	ID                   int64            `json:"id"`
+	BuyTransactionVolume int64            `json:"buy_transaction_volume"`
+	BuyTransactionValue  int64            `json:"buy_transaction_value"`
+	CapitalCost          int64            `json:"capital_cost"`
+	TransactionFee       int64            `json:"transaction_fee"`
+	TransactionTax       int64            `json:"transaction_tax"`
+	UpdatedDate          pgtype.Timestamp `json:"updated_date"`
+	Status               InvestmentStatus `json:"status"`
 }
 
-func (q *Queries) UpdateInvestmentWhenBuying(ctx context.Context, arg UpdateInvestmentWhenBuyingParams) error {
-	_, err := q.db.Exec(ctx, updateInvestmentWhenBuying,
+func (q *Queries) UpdateInvestmentWhenBuying(ctx context.Context, arg UpdateInvestmentWhenBuyingParams) (Investment, error) {
+	row := q.db.QueryRow(ctx, updateInvestmentWhenBuying,
 		arg.ID,
-		arg.BuyVolume,
-		arg.BuyValue,
+		arg.BuyTransactionVolume,
+		arg.BuyTransactionValue,
 		arg.CapitalCost,
-		arg.CurrentVolume,
-		arg.Fee,
-		arg.Tax,
+		arg.TransactionFee,
+		arg.TransactionTax,
 		arg.UpdatedDate,
 		arg.Status,
 	)
-	return err
+	var i Investment
+	err := row.Scan(
+		&i.ID,
+		&i.AccountID,
+		&i.Ticker,
+		&i.CompanyName,
+		&i.BuyVolume,
+		&i.BuyValue,
+		&i.CapitalCost,
+		&i.MarketPrice,
+		&i.SellVolume,
+		&i.SellValue,
+		&i.CurrentVolume,
+		&i.Description,
+		&i.Status,
+		&i.Fee,
+		&i.Tax,
+		&i.UpdatedDate,
+	)
+	return i, err
 }
 
-const updateInvestmentWhenSeling = `-- name: UpdateInvestmentWhenSeling :exec
+const updateInvestmentWhenSeling = `-- name: UpdateInvestmentWhenSeling :one
 UPDATE investments
 SET sell_volume = sell_volume + $2,
 sell_value = sell_value + $3,
 current_volume = current_volume - $2,
-fee = fee + $4,
-tax = tax + $5, 
-status= $6,
-updated_date = $7
+capital_cost = $4,
+fee = fee + $5,
+tax = tax + $6, 
+status= $7,
+updated_date = $8
 WHERE id = $1
+RETURNING id, account_id, ticker, company_name, buy_volume, buy_value, capital_cost, market_price, sell_volume, sell_value, current_volume, description, status, fee, tax, updated_date
 `
 
 type UpdateInvestmentWhenSelingParams struct {
 	ID                    int64            `json:"id"`
 	SellTransactionVolume int64            `json:"sell_transaction_volume"`
 	SellTransactionValue  int64            `json:"sell_transaction_value"`
+	CapitalCost           int64            `json:"capital_cost"`
 	TransactionFee        int64            `json:"transaction_fee"`
 	TransactionTax        int64            `json:"transaction_tax"`
 	Status                InvestmentStatus `json:"status"`
 	UpdatedDate           pgtype.Timestamp `json:"updated_date"`
 }
 
-func (q *Queries) UpdateInvestmentWhenSeling(ctx context.Context, arg UpdateInvestmentWhenSelingParams) error {
-	_, err := q.db.Exec(ctx, updateInvestmentWhenSeling,
+func (q *Queries) UpdateInvestmentWhenSeling(ctx context.Context, arg UpdateInvestmentWhenSelingParams) (Investment, error) {
+	row := q.db.QueryRow(ctx, updateInvestmentWhenSeling,
 		arg.ID,
 		arg.SellTransactionVolume,
 		arg.SellTransactionValue,
+		arg.CapitalCost,
 		arg.TransactionFee,
 		arg.TransactionTax,
 		arg.Status,
 		arg.UpdatedDate,
 	)
-	return err
+	var i Investment
+	err := row.Scan(
+		&i.ID,
+		&i.AccountID,
+		&i.Ticker,
+		&i.CompanyName,
+		&i.BuyVolume,
+		&i.BuyValue,
+		&i.CapitalCost,
+		&i.MarketPrice,
+		&i.SellVolume,
+		&i.SellValue,
+		&i.CurrentVolume,
+		&i.Description,
+		&i.Status,
+		&i.Fee,
+		&i.Tax,
+		&i.UpdatedDate,
+	)
+	return i, err
+}
+
+const updateMarketPrice = `-- name: UpdateMarketPrice :one
+UPDATE investments 
+SET market_price = $2
+WHERE id = $1
+RETURNING id,market_price
+`
+
+type UpdateMarketPriceParams struct {
+	ID          int64 `json:"id"`
+	MarketPrice int64 `json:"market_price"`
+}
+
+type UpdateMarketPriceRow struct {
+	ID          int64 `json:"id"`
+	MarketPrice int64 `json:"market_price"`
+}
+
+func (q *Queries) UpdateMarketPrice(ctx context.Context, arg UpdateMarketPriceParams) (UpdateMarketPriceRow, error) {
+	row := q.db.QueryRow(ctx, updateMarketPrice, arg.ID, arg.MarketPrice)
+	var i UpdateMarketPriceRow
+	err := row.Scan(&i.ID, &i.MarketPrice)
+	return i, err
 }

@@ -3,9 +3,19 @@ insert into investments(account_id,ticker,company_name,buy_volume,buy_value,capi
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 RETURNING *;
 
+-- name: GetInvestmentOverviewById :one
+select * from investment_overview
+where id=$1;
+
+-- name: GetInvestmentById :one
+select * from investments
+where id=$1;
+
 -- name: SearchInvestmentPaging :many
 SELECT * FROM investment_overview
-WHERE account_id = ANY(@account_ids::bigint[]) AND ticker ILIKE @search_text::text
+WHERE account_id = ANY(@account_ids::bigint[]) 
+    AND ticker ILIKE 
+        CASE WHEN @search_text::text = '' THEN '%%' ELSE '%' || @search_text::text || '%' END
 ORDER BY 
     CASE WHEN @order_by::text = 'ticker' AND @sort_type::text = 'ascending' THEN ticker END ASC,
     CASE WHEN @order_by::text = 'ticker' AND @sort_type::text = 'descending' THEN ticker END DESC,
@@ -25,41 +35,36 @@ WHERE account_id=ANY(@account_ids::bigint[]) AND (ticker ILIKE @search_text::tex
 SELECT * from investments
 where ticker=$1 AND account_id =$2;
 
--- name: GetInvestmentsByAccountId :many
-select * from investments
-where account_id=$1;
-
--- name: GetInvestmentById :one
-select * from investments
-where id=$1;
-
--- name: UpdateInvestmentStatus :exec
+-- name: UpdateInvestmentWhenBuying :one
 update investments
-set status=$2
-WHERE id=$1;
+set buy_volume = buy_volume + @buy_transaction_volume,
+buy_value = buy_value + @buy_transaction_value,
+capital_cost = @capital_cost,
+current_volume = current_volume + @buy_transaction_volume,
+fee = fee + @transaction_fee,
+tax = tax + @transaction_tax,
+updated_date = @updated_date, 
+status = @status
+where id = $1
+RETURNING *;
 
--- name: UpdateInvestmentWhenBuying :exec
-update investments
-set buy_volume = $2,
-buy_value = $3,
-capital_cost = $4,
-current_volume = $5,
-fee = $6,
-tax = $7,
-updated_date = $8, 
-status=$9
-where id = $1;
-
--- name: UpdateInvestmentWhenSeling :exec
+-- name: UpdateInvestmentWhenSeling :one
 UPDATE investments
 SET sell_volume = sell_volume + @sell_transaction_volume,
 sell_value = sell_value + @sell_transaction_value,
 current_volume = current_volume - @sell_transaction_volume,
+capital_cost = @capital_cost,
 fee = fee + @transaction_fee,
 tax = tax + @transaction_tax, 
 status= @status,
 updated_date = sqlc.arg(updated_date)
-WHERE id = $1;
+WHERE id = $1
+RETURNING *;
 
+-- name: UpdateMarketPrice :one
+UPDATE investments 
+SET market_price = $2
+WHERE id = $1
+RETURNING id,market_price;
 
 

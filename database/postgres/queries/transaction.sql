@@ -1,10 +1,6 @@
--- name: GetTransactionById :one
-select * from transactions
-where id = $1;
-
 -- name: CreateTransaction :one
-INSERT INTO transactions(investment_id,ticker,trading_date,trade,volume,order_price,match_volume,match_price,match_value,fee,tax,"cost","cost_of_goods_sold","return","status")
-VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+INSERT INTO transactions(investment_id,ticker,trading_date,trade,volume,order_price,match_volume,match_price,match_value,fee,tax,"cost","cost_of_goods_sold","return","status", return_error, inserted_date)
+VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15, $16, $17)
 RETURNING *;
 
 -- name: GetTransactionsPaging :many
@@ -24,8 +20,12 @@ ORDER BY
 	CASE WHEN @order_by::text= 'return' AND @order_type::text = 'ascending' THEN T.return END ASC
 OFFSET @from_offset::int LIMIT @to_limit::int;
 
--- name: GetSumTransactionInfo :one
-SELECT COUNT(T.id) AS total_rows, SUM( T.match_value) AS sum_match_value , SUM(T.fee) AS sum_fee, SUM(T.tax) AS sum_tax , SUM(T."return") AS sum_return
+-- name: GetTransactionSummarizeInfo :one
+SELECT COUNT(T.id)::INT AS total_rows,
+COALESCE(SUM( T.match_value), 0)::BIGINT AS sum_match_value, 
+COALESCE(SUM(T.fee), 0)::BIGINT AS sum_fee, 
+COALESCE(SUM(T.tax), 0)::BIGINT AS sum_tax, 
+COALESCE(SUM(T."return"), 0)::BIGINT AS sum_return
 FROM investments AS I
 INNER JOIN transactions AS T ON I.id = T.investment_id
 WHERE I.account_id = ANY(@account_ids::bigint[]) AND
