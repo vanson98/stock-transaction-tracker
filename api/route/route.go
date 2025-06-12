@@ -24,7 +24,7 @@ func Setup(env *bootstrap.Env, timeout time.Duration, store db.IStore, engine *g
 
 	// set up middlewares
 	middleware.UseCors(protectedRouter)
-	middleware.UseTokenVerification(protectedRouter)
+	//middleware.UseTokenVerification(protectedRouter)
 
 	// set up router matching pattern
 	InitInvestmentRouter(protectedRouter, investmentService)

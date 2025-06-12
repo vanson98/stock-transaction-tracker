@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
-	"strings"
 	transaction_model "stt/api/models/transaction"
 	db "stt/database/postgres/sqlc"
 	"stt/services/dtos"
@@ -15,7 +13,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/xuri/excelize/v2"
 )
 
 type transactionController struct {
@@ -101,6 +98,66 @@ func (tc transactionController) CreateNewTransaction(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
+func (ac *transactionController) AddTransaction(c *gin.Context) {
+	var addTransactionRequest transaction_model.AddTransactionRequest
+	err := c.ShouldBindBodyWithJSON(&addTransactionRequest)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	tradingDate, err := time.Parse("02/01/2006", addTransactionRequest.TradingDate)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	transaction := db.Transaction{
+		Ticker: addTransactionRequest.Ticker,
+		TradingDate: pgtype.Timestamp{
+			Time:  tradingDate,
+			Valid: true,
+		},
+		Trade:       db.TradeType(addTransactionRequest.Trade),
+		Volume:      addTransactionRequest.Volume,
+		OrderPrice:  addTransactionRequest.OrderPrice,
+		MatchVolume: addTransactionRequest.MatchVolume,
+		MatchPrice:  addTransactionRequest.MatchPrice,
+		MatchValue:  addTransactionRequest.MatchValue,
+		Fee:         addTransactionRequest.Fee,
+		Tax:         addTransactionRequest.Tax,
+		Cost:        addTransactionRequest.Cost,
+		Return:      addTransactionRequest.Return,
+		Status:      db.TransactionStatusCOMPLETED,
+	}
+	importTransaction, err := ac.transactionService.ImportTransaction(c, addTransactionRequest.AccountId, transaction, addTransactionRequest.CheckCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, errorResponse(err))
+	} else {
+		// response to cron job
+		c.JSON(http.StatusOK, importTransaction)
+	}
+
+	apiGatewayNoti := struct {
+		TransactionId int64
+		Error         string
+	}{
+		Error:         "",
+		TransactionId: importTransaction.ID,
+	}
+	if err != nil {
+		apiGatewayNoti.Error = err.Error()
+	}
+	// transer result to api gateway
+	client := http.Client{}
+	jsonData, _ := json.Marshal(apiGatewayNoti)
+	buffer := bytes.Buffer{}
+	buffer.Write(jsonData)
+	_, err = client.Post("http://localhost:6061/notification", "application/json", &buffer)
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
+/* NOT USE ANYMORE
 func (ac *transactionController) ImportTransactions(c *gin.Context) {
 	form, err := c.MultipartForm()
 	if err != nil {
@@ -190,61 +247,4 @@ func (ac *transactionController) ImportTransactions(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, result)
 }
-
-func (ac *transactionController) AddTransaction(c *gin.Context) {
-	var addTransactionRequest transaction_model.AddTransactionRequest
-	err := c.ShouldBindBodyWithJSON(&addTransactionRequest)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-	tradingDate, err := time.Parse("02/01/2006", addTransactionRequest.TradingDate)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-	transaction, err := ac.transactionService.ImportTransaction(c, addTransactionRequest.AccountId, db.Transaction{
-		Ticker: addTransactionRequest.Ticker,
-		TradingDate: pgtype.Timestamp{
-			Time:  tradingDate,
-			Valid: true,
-		},
-		Trade:       db.TradeType(addTransactionRequest.Trade),
-		Volume:      addTransactionRequest.Volume,
-		OrderPrice:  addTransactionRequest.OrderPrice,
-		MatchVolume: addTransactionRequest.MatchVolume,
-		MatchPrice:  addTransactionRequest.MatchPrice,
-		MatchValue:  addTransactionRequest.MatchValue,
-		Fee:         addTransactionRequest.Fee,
-		Tax:         addTransactionRequest.Tax,
-		Cost:        addTransactionRequest.Cost,
-		Return:      addTransactionRequest.Return,
-		Status:      db.TransactionStatus(addTransactionRequest.Status),
-	})
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, errorResponse(err))
-	} else {
-		// response to cron job
-		c.JSON(http.StatusOK, transaction)
-	}
-
-	apiGatewayNoti := struct {
-		TransactionId int64
-		Error         string
-	}{
-		Error:         "",
-		TransactionId: transaction.ID,
-	}
-	if err != nil {
-		apiGatewayNoti.Error = err.Error()
-	}
-	// transer result to api gate way
-	client := http.Client{}
-	jsonData, _ := json.Marshal(apiGatewayNoti)
-	buffer := bytes.Buffer{}
-	buffer.Write(jsonData)
-	_, err = client.Post("http://localhost:6061/notification", "application/json", &buffer)
-	if err != nil {
-		fmt.Println(err)
-	}
-}
+*/
